@@ -27,6 +27,7 @@ import {
   stopContainer,
 } from './container-runtime.js';
 import { detectAuthMode } from './credential-proxy.js';
+import { readEnvFile } from './env.js';
 import { validateAdditionalMounts } from './mount-security.js';
 import { RegisteredGroup } from './types.js';
 
@@ -234,6 +235,15 @@ function buildContainerArgs(
     args.push('-e', 'ANTHROPIC_API_KEY=placeholder');
   } else {
     args.push('-e', 'CLAUDE_CODE_OAUTH_TOKEN=placeholder');
+  }
+
+  // Pass GitHub CLI credentials if configured (for gh CLI inside containers)
+  const ghSecrets = readEnvFile(['GITHUB_TOKEN', 'GH_REPO']);
+  if (ghSecrets.GITHUB_TOKEN) {
+    args.push('-e', `GITHUB_TOKEN=${ghSecrets.GITHUB_TOKEN}`);
+  }
+  if (ghSecrets.GH_REPO) {
+    args.push('-e', `GH_REPO=${ghSecrets.GH_REPO}`);
   }
 
   // Runtime-specific args for host gateway resolution
