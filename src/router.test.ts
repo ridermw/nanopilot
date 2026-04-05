@@ -38,16 +38,18 @@ describe('router', () => {
 
   describe('formatMessages', () => {
     it('formats single message with context header', () => {
-      const msgs: NewMessage[] = [{
-        id: '1',
-        chat_jid: 'test@g.us',
-        sender: '123',
-        sender_name: 'Alice',
-        content: 'Hello',
-        timestamp: '2024-01-01T12:00:00Z',
-        is_from_me: false,
-        is_bot_message: false,
-      }];
+      const msgs: NewMessage[] = [
+        {
+          id: '1',
+          chat_jid: 'test@g.us',
+          sender: '123',
+          sender_name: 'Alice',
+          content: 'Hello',
+          timestamp: '2024-01-01T12:00:00Z',
+          is_from_me: false,
+          is_bot_message: false,
+        },
+      ];
 
       const result = formatMessages(msgs, 'UTC');
 
@@ -59,37 +61,43 @@ describe('router', () => {
     });
 
     it('includes reply attributes when present', () => {
-      const msgs: NewMessage[] = [{
-        id: '1',
-        chat_jid: 'test@g.us',
-        sender: '123',
-        sender_name: 'Alice',
-        content: 'Reply',
-        timestamp: '2024-01-01T12:00:00Z',
-        is_from_me: false,
-        is_bot_message: false,
-        reply_to_message_id: 'msg-0',
-        reply_to_sender_name: 'Bob',
-        reply_to_message_content: 'Original',
-      }];
+      const msgs: NewMessage[] = [
+        {
+          id: '1',
+          chat_jid: 'test@g.us',
+          sender: '123',
+          sender_name: 'Alice',
+          content: 'Reply',
+          timestamp: '2024-01-01T12:00:00Z',
+          is_from_me: false,
+          is_bot_message: false,
+          reply_to_message_id: 'msg-0',
+          reply_to_sender_name: 'Bob',
+          reply_to_message_content: 'Original',
+        },
+      ];
 
       const result = formatMessages(msgs, 'UTC');
 
       expect(result).toContain('reply_to="msg-0"');
-      expect(result).toContain('<quoted_message from="Bob">Original</quoted_message>');
+      expect(result).toContain(
+        '<quoted_message from="Bob">Original</quoted_message>',
+      );
     });
 
     it('escapes XML special chars in message content', () => {
-      const msgs: NewMessage[] = [{
-        id: '1',
-        chat_jid: 'test@g.us',
-        sender: '123',
-        sender_name: 'Alice & Bob',
-        content: '1 < 2',
-        timestamp: '2024-01-01T12:00:00Z',
-        is_from_me: false,
-        is_bot_message: false,
-      }];
+      const msgs: NewMessage[] = [
+        {
+          id: '1',
+          chat_jid: 'test@g.us',
+          sender: '123',
+          sender_name: 'Alice & Bob',
+          content: '1 < 2',
+          timestamp: '2024-01-01T12:00:00Z',
+          is_from_me: false,
+          is_bot_message: false,
+        },
+      ];
 
       const result = formatMessages(msgs, 'UTC');
 
@@ -121,7 +129,9 @@ describe('router', () => {
 
   describe('formatOutbound', () => {
     it('strips internal tags and returns clean text', () => {
-      expect(formatOutbound('Hello <internal>reason</internal> world')).toBe('Hello  world');
+      expect(formatOutbound('Hello <internal>reason</internal> world')).toBe(
+        'Hello  world',
+      );
     });
 
     it('returns empty string when only internal content', () => {

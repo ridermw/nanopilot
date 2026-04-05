@@ -100,16 +100,36 @@ describe('registered groups', () => {
 
   it('returns all registered groups', () => {
     const now = new Date().toISOString();
-    setRegisteredGroup('a@g.us', { name: 'A', folder: 'a', trigger: '@Bot', added_at: now });
-    setRegisteredGroup('b@g.us', { name: 'B', folder: 'b', trigger: '@Bot', added_at: now });
+    setRegisteredGroup('a@g.us', {
+      name: 'A',
+      folder: 'a',
+      trigger: '@Bot',
+      added_at: now,
+    });
+    setRegisteredGroup('b@g.us', {
+      name: 'B',
+      folder: 'b',
+      trigger: '@Bot',
+      added_at: now,
+    });
     const all = getAllRegisteredGroups();
     expect(Object.keys(all)).toHaveLength(2);
   });
 
   it('updates group on re-register', () => {
     const now = new Date().toISOString();
-    setRegisteredGroup('a@g.us', { name: 'Old', folder: 'a', trigger: '@Bot', added_at: now });
-    setRegisteredGroup('a@g.us', { name: 'New', folder: 'a', trigger: '@Bot', added_at: now });
+    setRegisteredGroup('a@g.us', {
+      name: 'Old',
+      folder: 'a',
+      trigger: '@Bot',
+      added_at: now,
+    });
+    setRegisteredGroup('a@g.us', {
+      name: 'New',
+      folder: 'a',
+      trigger: '@Bot',
+      added_at: now,
+    });
     expect(getRegisteredGroup('a@g.us')?.name).toBe('New');
   });
 });
