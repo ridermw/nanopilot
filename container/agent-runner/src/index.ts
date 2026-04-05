@@ -514,6 +514,16 @@ async function main(): Promise<void> {
           NANOPILOT_IS_MAIN: containerInput.isMain ? '1' : '0',
         },
       },
+      ...(fs.existsSync(path.join(path.dirname(mcpServerPath), 'ollama-mcp-stdio.js'))
+        ? {
+            ollama: {
+              type: 'local' as const,
+              command: 'node',
+              args: [path.join(path.dirname(mcpServerPath), 'ollama-mcp-stdio.js')],
+              tools: ['*' as string],
+            },
+          }
+        : {}),
     },
     skillDirectories: ['/home/node/.copilot/skills', '/workspace/project/container/skills'],
   };
