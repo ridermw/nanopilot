@@ -383,6 +383,7 @@ describe('container-runner timeout behavior', () => {
       name: 'Special/Group',
       folder: 'special.chars@folder',
       trigger: '@Bot',
+    added_at: new Date().toISOString(),
     };
 
     const resultPromise = runContainerAgent(

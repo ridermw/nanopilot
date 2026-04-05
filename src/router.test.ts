@@ -148,6 +148,7 @@ describe('router', () => {
       const sendMessage = vi.fn(async () => {});
       const channels: Channel[] = [
         {
+          name: 'mock-tg',
           sendMessage,
           connect: vi.fn(async () => {}),
           disconnect: vi.fn(async () => {}),
@@ -164,6 +165,7 @@ describe('router', () => {
     it('throws when no channel owns the JID', () => {
       const channels: Channel[] = [
         {
+          name: 'mock',
           sendMessage: vi.fn(async () => {}),
           connect: vi.fn(async () => {}),
           disconnect: vi.fn(async () => {}),
@@ -180,11 +182,12 @@ describe('router', () => {
     it('skips disconnected channels', () => {
       const channels: Channel[] = [
         {
+          name: 'mock',
           sendMessage: vi.fn(async () => {}),
           connect: vi.fn(async () => {}),
           disconnect: vi.fn(async () => {}),
           ownsJid: () => true,
-          isConnected: () => false, // disconnected
+          isConnected: () => false,
         },
       ];
 
@@ -197,10 +200,12 @@ describe('router', () => {
   describe('findChannel', () => {
     it('returns the channel that owns the JID', () => {
       const ch1: Channel = {
+        name: 'mock',
         sendMessage: vi.fn(async () => {}),
         connect: vi.fn(async () => {}),
         disconnect: vi.fn(async () => {}),
         ownsJid: (jid: string) => jid === 'match@jid',
+        isConnected: () => true,
       };
 
       const result = findChannel([ch1], 'match@jid');

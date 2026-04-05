@@ -69,7 +69,7 @@ function createDeps(
 ): SchedulerDependencies {
   return {
     registeredGroups: () => ({
-      'chat-1': { name: 'G1', folder: 'g1', trigger: '@Bot', isMain: false },
+      'chat-1': { name: 'G1', folder: 'g1', trigger: '@Bot', isMain: false, added_at: new Date().toISOString() },
     }),
     getSessions: () => ({}),
     queue: new GroupQueue() as any,

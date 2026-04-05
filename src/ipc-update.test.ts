@@ -119,7 +119,7 @@ describe('update_task', () => {
     const updated = getTaskById('task-up-2');
     expect(updated?.schedule_type).toBe('interval');
     // next_run should be ~60s from now
-    const nextRun = new Date(updated!.next_run).getTime();
+    const nextRun = new Date(updated!.next_run!).getTime();
     expect(nextRun).toBeGreaterThanOrEqual(before + 59000);
   });
 
