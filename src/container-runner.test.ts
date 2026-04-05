@@ -11,6 +11,7 @@ vi.mock('./config.js', () => ({
   CONTAINER_IMAGE: 'nanopilot-agent:latest',
   CONTAINER_MAX_OUTPUT_SIZE: 10485760,
   CONTAINER_TIMEOUT: 1800000, // 30min
+  CREDENTIAL_PROXY_PORT: 3001,
   DATA_DIR: '/tmp/nanopilot-test-data',
   GROUPS_DIR: '/tmp/nanopilot-test-groups',
   IDLE_TIMEOUT: 1800000, // 30min
@@ -53,10 +54,16 @@ vi.mock('./mount-security.js', () => ({
 
 // Mock container-runtime
 vi.mock('./container-runtime.js', () => ({
-  CONTAINER_RUNTIME_BIN: 'docker',
+  CONTAINER_RUNTIME_BIN: 'container',
+  CONTAINER_HOST_GATEWAY: 'host.docker.internal',
   hostGatewayArgs: () => [],
   readonlyMountArgs: (h: string, c: string) => ['-v', `${h}:${c}:ro`],
   stopContainer: vi.fn(),
+}));
+
+// Mock credential-proxy
+vi.mock('./credential-proxy.js', () => ({
+  detectAuthMode: vi.fn(() => 'api-key'),
 }));
 
 // Create a controllable fake ChildProcess
