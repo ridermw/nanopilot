@@ -6,6 +6,7 @@ describe('logger', () => {
   let originalLogLevel: string | undefined;
 
   beforeEach(() => {
+    originalLogLevel = process.env.LOG_LEVEL;
     stdoutWrite = vi
       .spyOn(process.stdout, 'write')
       .mockImplementation(() => true);
@@ -19,6 +20,8 @@ describe('logger', () => {
     stderrWrite.mockRestore();
     if (originalLogLevel !== undefined) {
       process.env.LOG_LEVEL = originalLogLevel;
+    } else {
+      delete process.env.LOG_LEVEL;
     }
   });
 

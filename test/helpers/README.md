@@ -12,10 +12,10 @@
 
 ## Mock Factories
 
-Import shared mocks from `./mocks.ts`:
+Import shared mock factories from `./mocks.ts`:
 
 ```typescript
-import { mockLogger, mockFs, createMockChannel, createMockContainerProcess } from '../../test/helpers/mocks.js';
+import { createMockLogger, createMockChannel, createMockContainerProcess } from '../../test/helpers/mocks.js';
 ```
 
 ## Naming Conventions

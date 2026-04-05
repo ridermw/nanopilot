@@ -268,7 +268,7 @@ describe('index.ts orchestrator', () => {
         name: 'Bad Group',
         folder: '../escape',
         trigger: '@TestBot',
-      added_at: new Date().toISOString(),
+        added_at: new Date().toISOString(),
       });
 
       expect(setRegisteredGroup).not.toHaveBeenCalled();
@@ -294,7 +294,13 @@ describe('index.ts orchestrator', () => {
 
     it('returns true when no messages pending', async () => {
       _setRegisteredGroups({
-        'chat-1': { name: 'G1', folder: 'g1', trigger: '@Bot', isMain: true, added_at: new Date().toISOString() },
+        'chat-1': {
+          name: 'G1',
+          folder: 'g1',
+          trigger: '@Bot',
+          isMain: true,
+          added_at: new Date().toISOString(),
+        },
       });
       vi.mocked(findChannel).mockReturnValue({
         name: 'mock',
@@ -312,7 +318,12 @@ describe('index.ts orchestrator', () => {
 
     it('returns true when no channel owns the JID', async () => {
       _setRegisteredGroups({
-        'chat-1': { name: 'G1', folder: 'g1', trigger: '@Bot', added_at: new Date().toISOString() },
+        'chat-1': {
+          name: 'G1',
+          folder: 'g1',
+          trigger: '@Bot',
+          added_at: new Date().toISOString(),
+        },
       });
       vi.mocked(findChannel).mockReturnValue(undefined);
 
