@@ -6,8 +6,12 @@ describe('logger', () => {
   let originalLogLevel: string | undefined;
 
   beforeEach(() => {
-    stdoutWrite = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    stdoutWrite = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
+    stderrWrite = vi
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true);
   });
 
   afterEach(() => {
@@ -25,7 +29,9 @@ describe('logger', () => {
     logger.info('test message');
 
     expect(stdoutWrite).toHaveBeenCalledWith(expect.stringContaining('INFO'));
-    expect(stdoutWrite).toHaveBeenCalledWith(expect.stringContaining('test message'));
+    expect(stdoutWrite).toHaveBeenCalledWith(
+      expect.stringContaining('test message'),
+    );
   });
 
   it('writes warn messages to stderr', async () => {
@@ -35,7 +41,9 @@ describe('logger', () => {
     logger.warn('warning message');
 
     expect(stderrWrite).toHaveBeenCalledWith(expect.stringContaining('WARN'));
-    expect(stderrWrite).toHaveBeenCalledWith(expect.stringContaining('warning message'));
+    expect(stderrWrite).toHaveBeenCalledWith(
+      expect.stringContaining('warning message'),
+    );
   });
 
   it('writes error messages to stderr', async () => {

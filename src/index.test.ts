@@ -3,7 +3,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Heavy mocking — index.ts has many dependencies
 vi.mock('fs');
 vi.mock('./logger.js', () => ({
-  logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), fatal: vi.fn() },
+  logger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn(),
+  },
 }));
 vi.mock('./config.js', () => ({
   ASSISTANT_NAME: 'TestBot',
@@ -100,7 +106,11 @@ import {
   deleteSession,
   setSession,
 } from './db.js';
-import { runContainerAgent, writeTasksSnapshot, writeGroupsSnapshot } from './container-runner.js';
+import {
+  runContainerAgent,
+  writeTasksSnapshot,
+  writeGroupsSnapshot,
+} from './container-runner.js';
 import { resolveGroupFolderPath } from './group-folder.js';
 import { findChannel } from './router.js';
 import {
@@ -169,7 +179,9 @@ describe('index.ts orchestrator', () => {
     });
 
     it('recovers cursor from last bot message', () => {
-      vi.mocked(getLastBotMessageTimestamp).mockReturnValue('2024-01-01T00:00:00Z');
+      vi.mocked(getLastBotMessageTimestamp).mockReturnValue(
+        '2024-01-01T00:00:00Z',
+      );
 
       const cursor = _getOrRecoverCursor('chat-1');
 
@@ -185,7 +197,10 @@ describe('index.ts orchestrator', () => {
     it('persists state to database', () => {
       _saveState();
 
-      expect(setRouterState).toHaveBeenCalledWith('last_timestamp', expect.any(String));
+      expect(setRouterState).toHaveBeenCalledWith(
+        'last_timestamp',
+        expect.any(String),
+      );
       expect(setRouterState).toHaveBeenCalledWith(
         'last_agent_timestamp',
         expect.any(String),
@@ -205,9 +220,12 @@ describe('index.ts orchestrator', () => {
         isMain: false,
       });
 
-      expect(setRegisteredGroup).toHaveBeenCalledWith('chat-1', expect.objectContaining({
-        name: 'Test Group',
-      }));
+      expect(setRegisteredGroup).toHaveBeenCalledWith(
+        'chat-1',
+        expect.objectContaining({
+          name: 'Test Group',
+        }),
+      );
       expect(mockedFs.mkdirSync).toHaveBeenCalled();
       expect(logger.info).toHaveBeenCalledWith(
         expect.objectContaining({ jid: 'chat-1', name: 'Test Group' }),
@@ -222,7 +240,9 @@ describe('index.ts orchestrator', () => {
         if (ps.includes('CLAUDE.md') && ps.includes('global')) return true;
         return false;
       });
-      mockedFs.readFileSync.mockReturnValue('# Andy\nYou are Andy, a helpful assistant.');
+      mockedFs.readFileSync.mockReturnValue(
+        '# Andy\nYou are Andy, a helpful assistant.',
+      );
 
       _registerGroup('chat-1', {
         name: 'Test',

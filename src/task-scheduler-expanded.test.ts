@@ -6,7 +6,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('fs');
 vi.mock('./logger.js', () => ({
-  logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), fatal: vi.fn() },
+  logger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn(),
+  },
 }));
 vi.mock('./config.js', () => ({
   ASSISTANT_NAME: 'TestBot',
@@ -58,7 +64,9 @@ import {
 } from './task-scheduler.js';
 import { ScheduledTask } from './types.js';
 
-function createDeps(overrides: Partial<SchedulerDependencies> = {}): SchedulerDependencies {
+function createDeps(
+  overrides: Partial<SchedulerDependencies> = {},
+): SchedulerDependencies {
   return {
     registeredGroups: () => ({
       'chat-1': { name: 'G1', folder: 'g1', trigger: '@Bot', isMain: false },

@@ -53,8 +53,12 @@ vi.mock('./mount-security.js', () => ({
 
 // Mock group-folder
 vi.mock('./group-folder.js', () => ({
-  resolveGroupFolderPath: vi.fn((f: string) => `/tmp/nanopilot-test-groups/${f}`),
-  resolveGroupIpcPath: vi.fn((f: string) => `/tmp/nanopilot-test-groups/${f}/ipc`),
+  resolveGroupFolderPath: vi.fn(
+    (f: string) => `/tmp/nanopilot-test-groups/${f}`,
+  ),
+  resolveGroupIpcPath: vi.fn(
+    (f: string) => `/tmp/nanopilot-test-groups/${f}/ipc`,
+  ),
 }));
 
 // Mock container-runtime
@@ -100,7 +104,12 @@ vi.mock('child_process', async () => {
   };
 });
 
-import { runContainerAgent, writeTasksSnapshot, writeGroupsSnapshot, ContainerOutput } from './container-runner.js';
+import {
+  runContainerAgent,
+  writeTasksSnapshot,
+  writeGroupsSnapshot,
+  ContainerOutput,
+} from './container-runner.js';
 import fs from 'fs';
 import type { RegisteredGroup } from './types.js';
 
@@ -267,11 +276,7 @@ describe('container-runner timeout behavior', () => {
   });
 
   it('non-zero exit code with no output resolves as error', async () => {
-    const resultPromise = runContainerAgent(
-      testGroup,
-      testInput,
-      () => {},
-    );
+    const resultPromise = runContainerAgent(testGroup, testInput, () => {});
 
     // Process exits with error code, no output markers
     fakeProc.emit('close', 1);
@@ -294,7 +299,9 @@ describe('container-runner timeout behavior', () => {
     );
 
     // Push malformed marker
-    fakeProc.stdout.push(`${OUTPUT_START_MARKER}\nnot-valid-json\n${OUTPUT_END_MARKER}\n`);
+    fakeProc.stdout.push(
+      `${OUTPUT_START_MARKER}\nnot-valid-json\n${OUTPUT_END_MARKER}\n`,
+    );
     await vi.advanceTimersByTimeAsync(10);
 
     expect(logger.warn).toHaveBeenCalledWith(
@@ -310,7 +317,9 @@ describe('container-runner timeout behavior', () => {
 
   it('multiple streamed outputs are all forwarded', async () => {
     const outputs: ContainerOutput[] = [];
-    const onOutput = vi.fn(async (o: ContainerOutput) => { outputs.push(o); });
+    const onOutput = vi.fn(async (o: ContainerOutput) => {
+      outputs.push(o);
+    });
     const resultPromise = runContainerAgent(
       testGroup,
       testInput,
@@ -337,11 +346,7 @@ describe('container-runner timeout behavior', () => {
 
   it('stderr is logged at debug level', async () => {
     const { logger } = await import('./logger.js');
-    const resultPromise = runContainerAgent(
-      testGroup,
-      testInput,
-      () => {},
-    );
+    const resultPromise = runContainerAgent(testGroup, testInput, () => {});
 
     fakeProc.stderr.push('Some debug output from SDK\n');
     await vi.advanceTimersByTimeAsync(10);
@@ -358,11 +363,7 @@ describe('container-runner timeout behavior', () => {
 
   it('calls onProcess callback with the child process', async () => {
     const onProcess = vi.fn();
-    const resultPromise = runContainerAgent(
-      testGroup,
-      testInput,
-      onProcess,
-    );
+    const resultPromise = runContainerAgent(testGroup, testInput, onProcess);
 
     expect(onProcess).toHaveBeenCalledWith(
       fakeProc,
@@ -412,8 +413,24 @@ describe('writeTasksSnapshot', () => {
   it('writes all tasks for main group', () => {
     const mockFs = vi.mocked(fs);
     const tasks = [
-      { id: '1', groupFolder: 'g1', prompt: 'T1', schedule_type: 'once', schedule_value: 'v', status: 'active', next_run: null },
-      { id: '2', groupFolder: 'g2', prompt: 'T2', schedule_type: 'once', schedule_value: 'v', status: 'active', next_run: null },
+      {
+        id: '1',
+        groupFolder: 'g1',
+        prompt: 'T1',
+        schedule_type: 'once',
+        schedule_value: 'v',
+        status: 'active',
+        next_run: null,
+      },
+      {
+        id: '2',
+        groupFolder: 'g2',
+        prompt: 'T2',
+        schedule_type: 'once',
+        schedule_value: 'v',
+        status: 'active',
+        next_run: null,
+      },
     ];
 
     writeTasksSnapshot('g1', true, tasks);
@@ -430,8 +447,24 @@ describe('writeTasksSnapshot', () => {
   it('filters tasks for non-main group', () => {
     const mockFs = vi.mocked(fs);
     const tasks = [
-      { id: '1', groupFolder: 'g1', prompt: 'T1', schedule_type: 'once', schedule_value: 'v', status: 'active', next_run: null },
-      { id: '2', groupFolder: 'g2', prompt: 'T2', schedule_type: 'once', schedule_value: 'v', status: 'active', next_run: null },
+      {
+        id: '1',
+        groupFolder: 'g1',
+        prompt: 'T1',
+        schedule_type: 'once',
+        schedule_value: 'v',
+        status: 'active',
+        next_run: null,
+      },
+      {
+        id: '2',
+        groupFolder: 'g2',
+        prompt: 'T2',
+        schedule_type: 'once',
+        schedule_value: 'v',
+        status: 'active',
+        next_run: null,
+      },
     ];
 
     writeTasksSnapshot('g1', false, tasks);
@@ -451,7 +484,12 @@ describe('writeGroupsSnapshot', () => {
     const mockFs = vi.mocked(fs);
     const groups = [
       { jid: 'j1', name: 'G1', lastActivity: '2024-01-01', isRegistered: true },
-      { jid: 'j2', name: 'G2', lastActivity: '2024-01-01', isRegistered: false },
+      {
+        jid: 'j2',
+        name: 'G2',
+        lastActivity: '2024-01-01',
+        isRegistered: false,
+      },
     ];
 
     writeGroupsSnapshot('g1', true, groups, new Set(['j1']));

@@ -248,12 +248,7 @@ describe('update_task', () => {
 describe('unknown IPC task type', () => {
   it('does not crash on unknown type', async () => {
     await expect(
-      processTaskIpc(
-        { type: 'nonexistent_type' },
-        'whatsapp_main',
-        true,
-        deps,
-      ),
+      processTaskIpc({ type: 'nonexistent_type' }, 'whatsapp_main', true, deps),
     ).resolves.not.toThrow();
   });
 });

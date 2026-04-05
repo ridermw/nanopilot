@@ -33,8 +33,16 @@ const mockedFs = vi.mocked(fs);
 function validAllowlist(overrides: Record<string, unknown> = {}) {
   return JSON.stringify({
     allowedRoots: [
-      { path: '/home/user/projects', allowReadWrite: true, description: 'Projects' },
-      { path: '/home/user/readonly', allowReadWrite: false, description: 'Read only' },
+      {
+        path: '/home/user/projects',
+        allowReadWrite: true,
+        description: 'Projects',
+      },
+      {
+        path: '/home/user/readonly',
+        allowReadWrite: false,
+        description: 'Read only',
+      },
     ],
     blockedPatterns: ['custom-secret'],
     nonMainReadOnly: true,
@@ -102,7 +110,11 @@ describe('mount-security', () => {
     it('rejects allowlist with non-array allowedRoots', () => {
       mockedFs.existsSync.mockReturnValue(true);
       mockedFs.readFileSync.mockReturnValue(
-        JSON.stringify({ allowedRoots: 'not-array', blockedPatterns: [], nonMainReadOnly: true }),
+        JSON.stringify({
+          allowedRoots: 'not-array',
+          blockedPatterns: [],
+          nonMainReadOnly: true,
+        }),
       );
 
       const result = loadMountAllowlist();
@@ -113,7 +125,11 @@ describe('mount-security', () => {
     it('rejects allowlist with non-array blockedPatterns', () => {
       mockedFs.existsSync.mockReturnValue(true);
       mockedFs.readFileSync.mockReturnValue(
-        JSON.stringify({ allowedRoots: [], blockedPatterns: 'nope', nonMainReadOnly: true }),
+        JSON.stringify({
+          allowedRoots: [],
+          blockedPatterns: 'nope',
+          nonMainReadOnly: true,
+        }),
       );
 
       const result = loadMountAllowlist();
@@ -124,7 +140,11 @@ describe('mount-security', () => {
     it('rejects allowlist with non-boolean nonMainReadOnly', () => {
       mockedFs.existsSync.mockReturnValue(true);
       mockedFs.readFileSync.mockReturnValue(
-        JSON.stringify({ allowedRoots: [], blockedPatterns: [], nonMainReadOnly: 'yes' }),
+        JSON.stringify({
+          allowedRoots: [],
+          blockedPatterns: [],
+          nonMainReadOnly: 'yes',
+        }),
       );
 
       const result = loadMountAllowlist();
@@ -170,7 +190,9 @@ describe('mount-security', () => {
       const result = loadMountAllowlist();
       expect(result).not.toBeNull();
       // .ssh and .env should appear only once each
-      const sshCount = result!.blockedPatterns.filter((p) => p === '.ssh').length;
+      const sshCount = result!.blockedPatterns.filter(
+        (p) => p === '.ssh',
+      ).length;
       expect(sshCount).toBe(1);
       expect(result!.blockedPatterns).toContain('custom-only');
     });
@@ -209,7 +231,10 @@ describe('mount-security', () => {
       setupAllowlist();
 
       const result = validateMount(
-        { hostPath: '/home/user/projects/repo', containerPath: '/absolute/path' },
+        {
+          hostPath: '/home/user/projects/repo',
+          containerPath: '/absolute/path',
+        },
         false,
       );
 
@@ -306,10 +331,7 @@ describe('mount-security', () => {
     it('blocks mounts not under any allowed root', () => {
       setupAllowlist();
 
-      const result = validateMount(
-        { hostPath: '/opt/not-allowed/repo' },
-        true,
-      );
+      const result = validateMount({ hostPath: '/opt/not-allowed/repo' }, true);
 
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain('not under any allowed root');
@@ -392,7 +414,10 @@ describe('mount-security', () => {
       setupAllowlist();
 
       const result = validateMount(
-        { hostPath: '/home/user/projects/my-repo', containerPath: 'custom-name' },
+        {
+          hostPath: '/home/user/projects/my-repo',
+          containerPath: 'custom-name',
+        },
         true,
       );
 
@@ -589,10 +614,7 @@ describe('mount-security', () => {
       mockedFs.existsSync.mockReturnValue(false);
 
       const result = validateAdditionalMounts(
-        [
-          { hostPath: '/some/path1' },
-          { hostPath: '/some/path2' },
-        ],
+        [{ hostPath: '/some/path1' }, { hostPath: '/some/path2' }],
         'test-group',
         true,
       );
@@ -600,7 +622,9 @@ describe('mount-security', () => {
       expect(result).toHaveLength(0);
       // Each mount triggers: loadMountAllowlist warn + validateAdditionalMounts warn
       expect(logger.warn).toHaveBeenCalledWith(
-        expect.objectContaining({ reason: expect.stringContaining('No mount allowlist') }),
+        expect.objectContaining({
+          reason: expect.stringContaining('No mount allowlist'),
+        }),
         expect.stringContaining('REJECTED'),
       );
     });
@@ -629,8 +653,12 @@ describe('mount-security', () => {
     it('includes both read-write and read-only examples', () => {
       const parsed = JSON.parse(generateAllowlistTemplate());
 
-      const rwRoot = parsed.allowedRoots.find((r: any) => r.allowReadWrite === true);
-      const roRoot = parsed.allowedRoots.find((r: any) => r.allowReadWrite === false);
+      const rwRoot = parsed.allowedRoots.find(
+        (r: any) => r.allowReadWrite === true,
+      );
+      const roRoot = parsed.allowedRoots.find(
+        (r: any) => r.allowReadWrite === false,
+      );
 
       expect(rwRoot).toBeDefined();
       expect(roRoot).toBeDefined();
