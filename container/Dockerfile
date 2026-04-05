@@ -1,4 +1,4 @@
-# NanoClaw Agent Container (Copilot Edition)
+# NanoPilot Agent Container
 # Runs GitHub Copilot SDK in isolated Linux VM with browser automation
 
 FROM node:22-slim
