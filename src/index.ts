@@ -28,6 +28,7 @@ import {
   cleanupOrphans,
   ensureContainerRuntimeRunning,
 } from './container-runtime.js';
+import { startSessionCleanup } from './session-cleanup.js';
 import {
   getAllChats,
   getAllRegisteredGroups,
@@ -543,6 +544,7 @@ async function main(): Promise<void> {
   initDatabase();
   logger.info('Database initialized');
   loadState();
+  startSessionCleanup();
 
   // Fail fast if Copilot token is missing
   if (!COPILOT_GITHUB_TOKEN) {
