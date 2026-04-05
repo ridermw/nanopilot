@@ -193,7 +193,7 @@ Yes. Docker works on macOS, Linux, and Windows (via WSL2). On macOS, you can als
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Bug fixes, security fixes, and simplifications welcome. New capabilities should be contributed as [skills](docs/skills-as-branches.md).
+Start with [CONSTITUTION.md](CONSTITUTION.md) for NanoPilot's mission, scope boundaries, and decision tests. Then read [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow. Bug fixes, security fixes, and simplifications welcome. New capabilities should be contributed as [skills](docs/skills-as-branches.md).
 
 ## Community
 
