@@ -245,6 +245,186 @@ describe('update_task', () => {
   });
 });
 
+describe('pause_task', () => {
+  it('does nothing when taskId is missing', async () => {
+    await processTaskIpc({ type: 'pause_task' }, 'whatsapp_main', true, deps);
+    expect(deps.onTasksChanged).not.toHaveBeenCalled();
+  });
+
+  it('warns and does nothing when task is not found', async () => {
+    await processTaskIpc(
+      { type: 'pause_task', taskId: 'ghost-task' },
+      'whatsapp_main',
+      true,
+      deps,
+    );
+    expect(deps.onTasksChanged).not.toHaveBeenCalled();
+  });
+
+  it('authorized group pauses a task', async () => {
+    const task = makeTask({ id: 'pause-1', status: 'active' });
+    createTask(task as any);
+
+    await processTaskIpc(
+      { type: 'pause_task', taskId: 'pause-1' },
+      'whatsapp_main',
+      true,
+      deps,
+    );
+
+    const updated = getTaskById('pause-1');
+    expect(updated?.status).toBe('paused');
+    expect(deps.onTasksChanged).toHaveBeenCalled();
+  });
+
+  it('non-main group cannot pause another groups task', async () => {
+    const task = makeTask({ id: 'pause-2', status: 'active' });
+    createTask(task as any);
+
+    await processTaskIpc(
+      { type: 'pause_task', taskId: 'pause-2' },
+      'other-group',
+      false,
+      deps,
+    );
+
+    const t = getTaskById('pause-2');
+    expect(t?.status).toBe('active');
+    expect(deps.onTasksChanged).not.toHaveBeenCalled();
+  });
+});
+
+describe('resume_task', () => {
+  it('does nothing when taskId is missing', async () => {
+    await processTaskIpc({ type: 'resume_task' }, 'whatsapp_main', true, deps);
+    expect(deps.onTasksChanged).not.toHaveBeenCalled();
+  });
+
+  it('warns and does nothing when task is not found', async () => {
+    await processTaskIpc(
+      { type: 'resume_task', taskId: 'ghost-task' },
+      'whatsapp_main',
+      true,
+      deps,
+    );
+    expect(deps.onTasksChanged).not.toHaveBeenCalled();
+  });
+
+  it('authorized group resumes a paused task', async () => {
+    const task = makeTask({ id: 'resume-1', status: 'paused' });
+    createTask(task as any);
+
+    await processTaskIpc(
+      { type: 'resume_task', taskId: 'resume-1' },
+      'whatsapp_main',
+      true,
+      deps,
+    );
+
+    const updated = getTaskById('resume-1');
+    expect(updated?.status).toBe('active');
+    expect(deps.onTasksChanged).toHaveBeenCalled();
+  });
+});
+
+describe('cancel_task', () => {
+  it('authorized group cancels and deletes a task', async () => {
+    const task = makeTask({ id: 'cancel-1' });
+    createTask(task as any);
+    expect(getTaskById('cancel-1')).toBeDefined();
+
+    await processTaskIpc(
+      { type: 'cancel_task', taskId: 'cancel-1' },
+      'whatsapp_main',
+      true,
+      deps,
+    );
+
+    expect(getTaskById('cancel-1')).toBeUndefined();
+    expect(deps.onTasksChanged).toHaveBeenCalled();
+  });
+
+  it('non-main group cannot cancel another groups task', async () => {
+    const task = makeTask({ id: 'cancel-2' });
+    createTask(task as any);
+
+    await processTaskIpc(
+      { type: 'cancel_task', taskId: 'cancel-2' },
+      'other-group',
+      false,
+      deps,
+    );
+
+    expect(getTaskById('cancel-2')).toBeDefined();
+    expect(deps.onTasksChanged).not.toHaveBeenCalled();
+  });
+});
+
+describe('refresh_groups', () => {
+  it('main group triggers sync and snapshot', async () => {
+    deps.syncGroups = vi.fn(async () => {});
+    deps.writeGroupsSnapshot = vi.fn();
+    deps.getAvailableGroups = vi.fn(() => []);
+
+    await processTaskIpc(
+      { type: 'refresh_groups' },
+      'whatsapp_main',
+      true,
+      deps,
+    );
+
+    expect(deps.syncGroups).toHaveBeenCalledWith(true);
+    expect(deps.writeGroupsSnapshot).toHaveBeenCalledWith(
+      'whatsapp_main',
+      true,
+      [],
+      expect.any(Set),
+    );
+  });
+
+  it('non-main group is blocked from refreshing', async () => {
+    deps.syncGroups = vi.fn(async () => {});
+
+    await processTaskIpc(
+      { type: 'refresh_groups' },
+      'other-group',
+      false,
+      deps,
+    );
+
+    expect(deps.syncGroups).not.toHaveBeenCalled();
+  });
+});
+
+describe('update_task schedule recompute', () => {
+  it('recomputes next_run when schedule_value changes for interval type', async () => {
+    const task = makeTask({
+      id: 'sched-1',
+      schedule_type: 'interval',
+      schedule_value: '60000',
+    });
+    createTask(task as any);
+    const before = Date.now();
+
+    await processTaskIpc(
+      {
+        type: 'update_task',
+        taskId: 'sched-1',
+        schedule_value: '120000',
+      },
+      'whatsapp_main',
+      true,
+      deps,
+    );
+
+    const updated = getTaskById('sched-1');
+    expect(updated?.schedule_value).toBe('120000');
+    const nextRun = new Date(updated!.next_run!).getTime();
+    expect(nextRun).toBeGreaterThanOrEqual(before + 119000);
+    expect(deps.onTasksChanged).toHaveBeenCalled();
+  });
+});
+
 describe('unknown IPC task type', () => {
   it('does not crash on unknown type', async () => {
     await expect(
