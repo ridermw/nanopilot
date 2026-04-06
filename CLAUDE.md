@@ -2,6 +2,16 @@
 
 Personal AI assistant powered by GitHub Copilot SDK. See [README.md](README.md) for setup. See [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) for architecture decisions.
 
+## Constitution
+
+Before proposing, planning, or making repository changes, read
+[CONSTITUTION.md](CONSTITUTION.md) **first**. Do this before using
+`CONTRIBUTING.md` as a workflow guide or starting implementation planning.
+Treat `CONSTITUTION.md` as the canonical source for NanoPilot's mission, scope,
+anti-goals, and decision tests. If it conflicts with `README.md`,
+`CONTRIBUTING.md`, or `docs/REQUIREMENTS.md`, follow `CONSTITUTION.md` and
+update the summaries in the same diff.
+
 ## Quick Context
 
 Single Node.js process with skill-based channel system. Channels (WhatsApp, Telegram, Slack, Discord, Gmail) are skills that self-register at startup. Messages route to GitHub Copilot SDK running in containers (Linux VMs). Each group has isolated filesystem and memory.

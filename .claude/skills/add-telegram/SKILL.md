@@ -23,23 +23,23 @@ If they have one, collect it now. If not, we'll create one in Phase 3.
 
 ## Phase 2: Apply Code Changes
 
-### Ensure channel remote
+### Ensure upstream remote
 
 ```bash
 git remote -v
 ```
 
-If `telegram` is missing, add it:
+If `upstream` is missing, add it:
 
 ```bash
-git remote add telegram https://github.com/ridermw/nanopilot-telegram.git
+git remote add upstream https://github.com/ridermw/nanopilot.git
 ```
 
 ### Merge the skill branch
 
 ```bash
-git fetch telegram main
-git merge telegram/main || {
+git fetch upstream skill/telegram
+git merge upstream/skill/telegram || {
   git checkout --theirs package-lock.json
   git add package-lock.json
   git merge --continue

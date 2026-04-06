@@ -1,0 +1,20 @@
+name: Skill Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.claude/skills/**'
+      - 'scripts/validate-skills.sh'
+      - '.github/workflows/skill-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Validate SKILL.md files
+        run: bash scripts/validate-skills.sh

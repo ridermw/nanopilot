@@ -1,11 +1,13 @@
 ---
-name: add-image-vision
-description: Add image vision to NanoPilot agents. Resizes and processes WhatsApp image attachments, then sends them to Claude as multimodal content blocks.
+name: whatsapp-vision
+description: Add image vision to NanoPilot agents via WhatsApp. Resizes and processes WhatsApp image attachments, then sends them to the Copilot SDK as multimodal blob attachments.
 ---
 
-# Image Vision Skill
+# WhatsApp Image Vision Skill
 
-Adds the ability for NanoPilot agents to see and understand images sent via WhatsApp. Images are downloaded, resized with sharp, saved to the group workspace, and passed to the agent as base64-encoded multimodal content blocks.
+Adds the ability for NanoPilot agents to see and understand images sent via WhatsApp. Images are downloaded, saved to the group workspace, and passed to the agent as blob attachments via the Copilot SDK.
+
+> **Note:** For Telegram image support, use the `/add-vision` skill instead, which adds a generic image pipeline that works across all channels.
 
 ## Phase 1: Pre-flight
 
