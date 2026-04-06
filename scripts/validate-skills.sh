@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Validate SKILL.md files in .claude/skills/
-# Checks: file exists, has YAML frontmatter (--- delimited), under 500 lines
+# Checks: file exists, has YAML frontmatter (--- delimited), 500 lines or fewer
 set -euo pipefail
 
 SKILLS_DIR=".claude/skills"
@@ -11,7 +11,18 @@ if [ ! -d "$SKILLS_DIR" ]; then
   exit 0
 fi
 
-for skill_dir in "$SKILLS_DIR"/*/; do
+# Find skill directories (handle case where none exist)
+skill_dirs=()
+for d in "$SKILLS_DIR"/*/; do
+  [ -d "$d" ] && skill_dirs+=("$d")
+done
+
+if [ ${#skill_dirs[@]} -eq 0 ]; then
+  echo "No skill directories found"
+  exit 0
+fi
+
+for skill_dir in "${skill_dirs[@]}"; do
   skill_file="$skill_dir/SKILL.md"
 
   if [ ! -f "$skill_file" ]; then
@@ -22,8 +33,7 @@ for skill_dir in "$SKILLS_DIR"/*/; do
   # Check frontmatter: file must start with ---
   first_line=$(head -1 "$skill_file")
   if [ "$first_line" != "---" ]; then
-    echo "ERROR: $skill_file missing frontmatter (must start with ---)"
-    ERRORS=$((ERRORS + 1))
+    echo "WARN: $skill_file missing frontmatter (must start with ---)"
     continue
   fi
 

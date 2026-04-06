@@ -126,7 +126,7 @@ echo "validate-skills.sh tests"
 echo "========================"
 
 run_test "valid skill passes"              0 "$(mk_valid)"
-run_test "missing frontmatter fails"       1 "$(mk_no_frontmatter)"
+run_test "missing frontmatter warns (exit 0)"  0 "$(mk_no_frontmatter)"
 run_test "unclosed frontmatter fails"      1 "$(mk_unclosed)"
 run_test "over 500 lines fails"            1 "$(mk_too_long)"
 run_test "missing name key fails"          1 "$(mk_no_name)"

@@ -3,7 +3,5 @@ title = "NanoPilot Gitleaks Config"
 [allowlist]
   description = "Allowlisted patterns"
   paths = [
-    '''(^|/)\.test\.ts$''',
     '''(^|/)test-fixtures/''',
-    '''(^|/)vitest\.config''',
   ]
