@@ -1,6 +1,6 @@
 /**
- * Expanded tests for task-scheduler.ts — covers runTask() and startSchedulerLoop().
- * Existing task-scheduler.test.ts covers computeNextRun().
+ * Expanded tests for task-scheduler.ts — covers computeNextRun(), runTask(),
+ * and startSchedulerLoop().
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
@@ -44,9 +44,8 @@ vi.mock('./group-folder.js', () => ({
   resolveGroupFolderPath: vi.fn((f: string) => `/mock/groups/${f}`),
 }));
 
-import fs from 'fs';
 import { logger } from './logger.js';
-import { runContainerAgent, writeTasksSnapshot } from './container-runner.js';
+import { runContainerAgent } from './container-runner.js';
 import {
   getAllTasks,
   getDueTasks,
@@ -88,19 +87,20 @@ function createDeps(
 
 function makeTask(overrides: Partial<ScheduledTask> = {}): ScheduledTask {
   return {
-    id: 1,
+    id: 'task-1',
     group_folder: 'g1',
     prompt: 'Do something',
     schedule_type: 'interval',
     schedule_value: '60000',
     status: 'active',
     chat_jid: 'chat-1',
-    source_jid: 'chat-1',
     created_at: '2024-01-01T00:00:00Z',
     next_run: new Date(Date.now() - 1000).toISOString(),
+    last_run: null,
+    last_result: null,
     context_mode: 'group',
     ...overrides,
-  } as ScheduledTask;
+  };
 }
 
 describe('task-scheduler expanded', () => {
@@ -129,7 +129,7 @@ describe('task-scheduler expanded', () => {
       expect(getDueTasks).toHaveBeenCalled();
       expect(deps.queue.enqueueTask).toHaveBeenCalledWith(
         'chat-1',
-        1,
+        'task-1',
         expect.any(Function),
       );
     });

@@ -282,14 +282,34 @@ describe('commandExists', () => {
 
 describe('isRoot (branching)', () => {
   it('returns false when getuid returns non-zero', () => {
+    if (typeof process.getuid !== 'function') {
+      Object.defineProperty(process, 'getuid', {
+        value: () => 1000,
+        configurable: true,
+        writable: true,
+      });
+    }
     const spy = vi.spyOn(process, 'getuid').mockReturnValue(1000);
-    expect(isRoot()).toBe(false);
-    spy.mockRestore();
+    try {
+      expect(isRoot()).toBe(false);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('returns true when getuid returns 0', () => {
+    if (typeof process.getuid !== 'function') {
+      Object.defineProperty(process, 'getuid', {
+        value: () => 0,
+        configurable: true,
+        writable: true,
+      });
+    }
     const spy = vi.spyOn(process, 'getuid').mockReturnValue(0);
-    expect(isRoot()).toBe(true);
-    spy.mockRestore();
+    try {
+      expect(isRoot()).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
