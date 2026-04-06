@@ -3,24 +3,27 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // --- grammy mock ---
 
 const mockSendMessage = vi.fn().mockResolvedValue({});
-const handlers: Record<string, Function> = {};
-let startOpts: { onStart?: () => void } | undefined;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const handlers: Record<string, (...args: any[]) => any> = {};
 const mockStop = vi.fn();
-let errorHandler: Function | undefined;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _errorHandler: ((...args: any[]) => any) | undefined;
 
 vi.mock('grammy', () => {
   class MockBot {
-    command(cmd: string, handler: Function) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    command(cmd: string, handler: (...args: any[]) => any) {
       handlers[`command:${cmd}`] = handler;
     }
-    on(filter: string, handler: Function) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    on(filter: string, handler: (...args: any[]) => any) {
       handlers[filter] = handler;
     }
-    catch(handler: Function) {
-      errorHandler = handler;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    catch(handler: (...args: any[]) => any) {
+      _errorHandler = handler;
     }
     start(opts?: { onStart?: () => void }) {
-      startOpts = opts;
       opts?.onStart?.();
     }
     stop = mockStop;
@@ -53,8 +56,7 @@ describe('telegram channel', () => {
     vi.clearAllMocks();
     handlers['command:chatid'] = () => {};
     handlers['message:text'] = () => {};
-    errorHandler = undefined;
-    startOpts = undefined;
+    _errorHandler = undefined;
   });
 
   afterEach(() => {

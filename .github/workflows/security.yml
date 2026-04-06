@@ -1,4 +1,4 @@
-name: CI
+name: Security
 
 on:
   push:
@@ -14,7 +14,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  quality:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b # v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@dcedce43c6f4 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b # v4
@@ -23,25 +33,5 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-
-      - name: Format check
-        run: npm run format:check
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npx tsc --noEmit
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@34e114876b0b # v4
-      - uses: actions/setup-node@49933ea5288c # v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-
-      - name: Tests
-        run: npx vitest run
+      - name: Audit dependencies
+        run: npm audit --audit-level=high

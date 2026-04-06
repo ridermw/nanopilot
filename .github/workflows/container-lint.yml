@@ -1,0 +1,20 @@
+name: Container Lint
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'container/Dockerfile'
+      - '.github/workflows/container-lint.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  hadolint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b # v4
+      - uses: hadolint/hadolint-action@54c9adbab158 # v3.1.0
+        with:
+          dockerfile: container/Dockerfile
