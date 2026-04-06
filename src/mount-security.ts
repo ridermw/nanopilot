@@ -417,3 +417,9 @@ export function generateAllowlistTemplate(): string {
 
   return JSON.stringify(template, null, 2);
 }
+
+/** Reset cached state — test-only */
+export function _resetMountSecurityForTests(): void {
+  cachedAllowlist = null;
+  allowlistLoadError = null;
+}
