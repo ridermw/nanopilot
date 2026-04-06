@@ -1,0 +1,32 @@
+name: Gstack Source Drift
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.claude/skills/add-gstack/**'
+      - 'scripts/validate-gstack-mapping.sh'
+      - 'scripts/check-gstack-drift.sh'
+      - '.github/workflows/gstack-source-drift.yml'
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-mapping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Validate gstack mapping contract
+        run: bash scripts/validate-gstack-mapping.sh
+
+  detect-drift:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Detect upstream gstack drift
+        run: bash scripts/check-gstack-drift.sh
