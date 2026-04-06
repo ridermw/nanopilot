@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>Your personal AI assistant, powered by GitHub Copilot.</strong><br>
-  Secure containerized agents. No Anthropic API key required.
+  Secure containerized agents.
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@ Millions of developers already have GitHub Copilot through work or personal subs
 | | Traditional Approach | NanoPilot |
 |---|---|---|
 | **AI Engine** | Claude Agent SDK | GitHub Copilot SDK |
-| **Auth** | Anthropic API key + OneCLI vault | `gh auth token` — that's it |
+| **Auth** |  API key + OneCLI vault | `gh auth token` — that's it |
 | **Models** | Claude family | GPT-4.1, Claude Sonnet, o3, Gemini — anything Copilot offers |
 | **Cost** | Pay-per-token (Anthropic) | Included with Copilot subscription |
 | **Token Security** | OneCLI credential proxy | Stdin injection — never in env vars |
@@ -193,7 +193,7 @@ Yes. Docker works on macOS, Linux, and Windows (via WSL2). On macOS, you can als
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Bug fixes, security fixes, and simplifications welcome. New capabilities should be contributed as [skills](docs/skills-as-branches.md).
+Start with [CONSTITUTION.md](CONSTITUTION.md) for NanoPilot's mission, scope boundaries, and decision tests. Then read [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow. Bug fixes, security fixes, and simplifications welcome. New capabilities should be contributed as [skills](docs/skills-as-branches.md).
 
 ## Community
 
