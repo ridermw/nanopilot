@@ -18,7 +18,7 @@ for NanoPilot is the reviewed `upstream/skill/gstack` adaptation branch.
 - Source lock: `.claude/skills/add-gstack/source-lock.json`
 - Mapping matrix: `.claude/skills/add-gstack/mapping.json`
 
-## What this branch adds today
+## What the reviewed `skill/gstack` branch currently adds
 
 - Reviewed source pin for the OpenClaw-native gstack skills
 - Explicit OpenClaw -> NanoPilot mapping matrix
