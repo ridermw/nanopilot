@@ -397,7 +397,7 @@ describe('container-runner timeout behavior', () => {
     const nameIdx = lastCall[1].indexOf('--name');
     const containerName = lastCall[1][nameIdx + 1];
     // Special chars replaced with dashes
-    expect(containerName).not.toMatch(/[.@\/]/);
+    expect(containerName).not.toMatch(/[.@/]/);
     expect(containerName).toContain('nanopilot-special-chars-folder');
 
     fakeProc.emit('close', 0);
