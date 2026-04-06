@@ -5,6 +5,7 @@
 **What:** Review and port applicable bug fixes from NanoClaw upstream PRs.
 **Why:** Known bugs likely affect NanoPilot's stability — message loss, deadlocks, security.
 **PRs to evaluate:** #1576 (message loss), #1623 (stream deadlock), #1640 (stale cache), telegram#95 (self-message loop), telegram#119 (409 reconnect), whatsapp#83 (Baileys logger), gmail#7 (credential exposure).
+**Context:** Each upstream PR needs individual evaluation; some fixes may not apply cleanly to NanoPilot's Copilot SDK architecture or current channel-skill layout.
 **Depends on:** Nothing.
 
 ## Configure branch protection rules
