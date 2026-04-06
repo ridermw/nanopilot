@@ -103,7 +103,7 @@ function stubFs(opts: {
     );
   }) as any);
 
-  mockedFs.statSync.mockImplementation(((p: string) => ({
+  mockedFs.statSync.mockImplementation(((_p: string) => ({
     isDirectory: () => true,
   })) as any);
 
