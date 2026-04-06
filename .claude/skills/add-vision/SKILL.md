@@ -27,8 +27,8 @@ Container (agent-runner)
 ## Phase 1: Pre-flight
 
 1. Check if `message_attachments` table exists in `store/messages.db` — if so, skip to Phase 3
-2. Verify Telegram channel is installed (`src/channels/telegram.ts` exists)
-3. Verify Node.js 18+ (for native `fetch()` used to download Telegram files)
+2. If Telegram channel is installed (`src/channels/telegram.ts` exists), Telegram photo support will be added in Phase 2.7. If not installed, skip that step — the core pipeline works without any specific channel.
+3. Verify Node.js 18+ (for native `fetch()` used to download files from channel APIs)
 
 ## Phase 2: Apply Code Changes
 
@@ -65,7 +65,9 @@ CREATE TABLE IF NOT EXISTS message_attachments (
 
 Add functions:
 - `storeAttachment(messageId, chatJid, idx, mimeType, filePath)` — insert metadata row
-- `getAttachmentsForMessages(messageIds: string[], chatJid: string): Map<string, { mimeType: string, filePath: string }[]>` — bulk load
+- `getAttachmentsForMessages(messages: Array<{messageId: string, chatJid: string}>): Map<string, { mimeType: string, filePath: string }[]>` — bulk load keyed by `${messageId}:${chatJid}`
+
+  This accepts messages from multiple chats because `getNewMessages()` returns across all registered groups in one batch.
 
 Modify `storeMessage()`:
 - Add optional `groupFolder?: string` parameter
@@ -73,6 +75,8 @@ Modify `storeMessage()`:
   - Create `groups/{groupFolder}/attachments/` directory
   - Save each attachment to `groups/{groupFolder}/attachments/{messageId}_{idx}.{ext}`
   - Call `storeAttachment()` for each
+
+**Critical:** Update the `onMessage` handler in `src/index.ts` to pass the group folder into `storeMessage()`. Look up the folder from the registered group: `registeredGroups[chatJid]?.folder` and pass it as the `groupFolder` argument.
 
 **Critical:** Modify `getNewMessages()` and `getMessagesSince()` queries — change:
 ```sql
@@ -103,7 +107,7 @@ images?: { base64: string; mimeType: string; messageId: string }[];
 
 ### 2.5 Index orchestration (`src/index.ts`)
 
-After calling `getMessagesSince()` / `getNewMessages()`, also call `getAttachmentsForMessages()` for the returned message IDs. Read each file from disk, base64 encode, and pass as `images` in `ContainerInput`.
+After calling `getMessagesSince()` / `getNewMessages()`, also call `getAttachmentsForMessages()` with `messages.map(m => ({ messageId: m.id, chatJid: m.chat_jid }))`. Read each file from disk, base64 encode, and pass as `images` in `ContainerInput`.
 
 ### 2.6 Agent runner (`container/agent-runner/src/index.ts`)
 
