@@ -31,4 +31,6 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Detect upstream gstack drift
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: bash scripts/check-gstack-drift.sh
