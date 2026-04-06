@@ -28,6 +28,7 @@ import {
   cleanupOrphans,
   ensureContainerRuntimeRunning,
 } from './container-runtime.js';
+import { startSessionCleanup } from './session-cleanup.js';
 import {
   getAllChats,
   getAllRegisteredGroups,
@@ -544,6 +545,7 @@ async function main(): Promise<void> {
   initDatabase();
   logger.info('Database initialized');
   loadState();
+  startSessionCleanup();
 
   // Fail fast if Copilot token is missing
   if (!COPILOT_GITHUB_TOKEN) {
@@ -690,3 +692,15 @@ if (isDirectRun) {
     process.exit(1);
   });
 }
+
+/** Test-only exports — prefixed with _ to signal internal use */
+export const _loadState = loadState;
+export const _getOrRecoverCursor = getOrRecoverCursor;
+export const _saveState = saveState;
+export const _registerGroup = registerGroup;
+export const _processGroupMessages = processGroupMessages;
+export const _runAgent = runAgent;
+export const _startMessageLoop = startMessageLoop;
+export const _recoverPendingMessages = recoverPendingMessages;
+export const _ensureContainerSystemRunning = ensureContainerSystemRunning;
+export const _main = main;

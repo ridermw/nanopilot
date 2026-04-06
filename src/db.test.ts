@@ -1,3 +1,7 @@
+/**
+ * Consolidated tests for db.ts — covers messages, chats, tasks, sessions,
+ * registered groups, router state, and edge cases.
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import {
@@ -6,14 +10,28 @@ import {
   deleteTask,
   getAllChats,
   getAllRegisteredGroups,
+  getAllSessions,
+  getAllTasks,
+  getDueTasks,
   getLastBotMessageTimestamp,
+  getLastGroupSync,
   getMessagesSince,
   getNewMessages,
+  getRegisteredGroup,
+  getRouterState,
+  getSession,
   getTaskById,
+  getTasksForGroup,
+  deleteSession,
+  setLastGroupSync,
   setRegisteredGroup,
+  setRouterState,
+  setSession,
   storeChatMetadata,
   storeMessage,
+  updateChatName,
   updateTask,
+  updateTaskAfterRun,
 } from './db.js';
 import { formatMessages } from './router.js';
 
@@ -42,7 +60,141 @@ function store(overrides: {
   });
 }
 
-// --- storeMessage (NewMessage format) ---
+// --- router state ---
+
+describe('router state', () => {
+  it('returns undefined for missing key', () => {
+    expect(getRouterState('nonexistent')).toBeUndefined();
+  });
+
+  it('stores and retrieves a value', () => {
+    setRouterState('test_key', 'test_value');
+    expect(getRouterState('test_key')).toBe('test_value');
+  });
+
+  it('overwrites existing value', () => {
+    setRouterState('key', 'v1');
+    setRouterState('key', 'v2');
+    expect(getRouterState('key')).toBe('v2');
+  });
+});
+
+// --- session management ---
+
+describe('session management', () => {
+  it('returns undefined for missing session', () => {
+    expect(getSession('nonexistent')).toBeUndefined();
+  });
+
+  it('stores and retrieves a session', () => {
+    setSession('group1', 'sess-abc');
+    expect(getSession('group1')).toBe('sess-abc');
+  });
+
+  it('deletes a session', () => {
+    setSession('group1', 'sess-abc');
+    deleteSession('group1');
+    expect(getSession('group1')).toBeUndefined();
+  });
+
+  it('returns all sessions', () => {
+    setSession('g1', 's1');
+    setSession('g2', 's2');
+    const all = getAllSessions();
+    expect(all).toEqual({ g1: 's1', g2: 's2' });
+  });
+
+  it('returns empty object when no sessions', () => {
+    expect(getAllSessions()).toEqual({});
+  });
+});
+
+// --- registered groups ---
+
+describe('registered groups', () => {
+  it('returns undefined for unregistered group', () => {
+    expect(getRegisteredGroup('unknown@jid')).toBeUndefined();
+  });
+
+  it('stores and retrieves a group', () => {
+    setRegisteredGroup('test@g.us', {
+      name: 'Test',
+      folder: 'test',
+      trigger: '@Bot',
+      added_at: new Date().toISOString(),
+    });
+    const group = getRegisteredGroup('test@g.us');
+    expect(group?.name).toBe('Test');
+    expect(group?.folder).toBe('test');
+  });
+
+  it('returns all registered groups', () => {
+    const now = new Date().toISOString();
+    setRegisteredGroup('a@g.us', {
+      name: 'A',
+      folder: 'a',
+      trigger: '@Bot',
+      added_at: now,
+    });
+    setRegisteredGroup('b@g.us', {
+      name: 'B',
+      folder: 'b',
+      trigger: '@Bot',
+      added_at: now,
+    });
+    const all = getAllRegisteredGroups();
+    expect(Object.keys(all)).toHaveLength(2);
+  });
+
+  it('updates group on re-register', () => {
+    const now = new Date().toISOString();
+    setRegisteredGroup('a@g.us', {
+      name: 'Old',
+      folder: 'a',
+      trigger: '@Bot',
+      added_at: now,
+    });
+    setRegisteredGroup('a@g.us', {
+      name: 'New',
+      folder: 'a',
+      trigger: '@Bot',
+      added_at: now,
+    });
+    expect(getRegisteredGroup('a@g.us')?.name).toBe('New');
+  });
+
+  it('persists isMain=true through set/get round-trip', () => {
+    setRegisteredGroup('main@s.whatsapp.net', {
+      name: 'Main Chat',
+      folder: 'whatsapp_main',
+      trigger: '@Andy',
+      added_at: '2024-01-01T00:00:00.000Z',
+      isMain: true,
+    });
+
+    const groups = getAllRegisteredGroups();
+    const group = groups['main@s.whatsapp.net'];
+    expect(group).toBeDefined();
+    expect(group.isMain).toBe(true);
+    expect(group.folder).toBe('whatsapp_main');
+  });
+
+  it('omits isMain for non-main groups', () => {
+    setRegisteredGroup('group@g.us', {
+      name: 'Family Chat',
+      folder: 'whatsapp_family-chat',
+      trigger: '@Andy',
+      added_at: '2024-01-01T00:00:00.000Z',
+    });
+
+    const groups = getAllRegisteredGroups();
+    const group = groups['group@g.us'];
+    expect(group).toBeDefined();
+    expect(group.isMain).toBeUndefined();
+  });
+});
+
+// --- storeMessage ---
 
 describe('storeMessage', () => {
   it('stores a message and retrieves it', () => {
@@ -499,7 +651,19 @@ describe('storeChatMetadata', () => {
   });
 });
 
-// --- Task CRUD ---
+// --- chat name update ---
+
+describe('chat name update', () => {
+  it('updates chat name via updateChatName', () => {
+    storeChatMetadata('test@g.us', '2024-01-01T00:00:00Z', 'Old Name');
+    updateChatName('test@g.us', 'New Name');
+    const chats = getAllChats();
+    const chat = chats.find((c) => c.jid === 'test@g.us');
+    expect(chat?.name).toBe('New Name');
+  });
+});
+
+// --- task CRUD ---
 
 describe('task CRUD', () => {
   it('creates and retrieves a task', () => {
@@ -559,7 +723,68 @@ describe('task CRUD', () => {
   });
 });
 
-// --- LIMIT behavior ---
+// --- task lifecycle ---
+
+describe('task lifecycle', () => {
+  const baseTask = {
+    id: 'task-1',
+    group_folder: 'g1',
+    chat_jid: 'chat@g.us',
+    prompt: 'Do something',
+    schedule_type: 'interval' as const,
+    schedule_value: '60000',
+    context_mode: 'isolated' as const,
+    next_run: new Date(Date.now() - 1000).toISOString(),
+    status: 'active',
+    created_at: new Date().toISOString(),
+    source_jid: 'chat@g.us',
+  };
+
+  it('returns undefined for non-existent task', () => {
+    expect(getTaskById('nonexistent')).toBeUndefined();
+  });
+
+  it('lists tasks by group folder', () => {
+    createTask(baseTask as any);
+    createTask({ ...baseTask, id: 'task-2', group_folder: 'g2' } as any);
+
+    expect(getTasksForGroup('g1')).toHaveLength(1);
+    expect(getTasksForGroup('g2')).toHaveLength(1);
+    expect(getTasksForGroup('g3')).toHaveLength(0);
+  });
+
+  it('lists all tasks', () => {
+    createTask(baseTask as any);
+    createTask({ ...baseTask, id: 'task-2' } as any);
+    expect(getAllTasks()).toHaveLength(2);
+  });
+
+  it('getDueTasks excludes future tasks', () => {
+    createTask({
+      ...baseTask,
+      next_run: new Date(Date.now() + 999999).toISOString(),
+    } as any);
+    expect(getDueTasks()).toHaveLength(0);
+  });
+
+  it('updateTaskAfterRun sets next_run and last_result', () => {
+    createTask(baseTask as any);
+    const nextRun = new Date(Date.now() + 60000).toISOString();
+    updateTaskAfterRun('task-1', nextRun, 'Success');
+    const task = getTaskById('task-1');
+    expect(task?.next_run).toBe(nextRun);
+    expect(task?.last_result).toBe('Success');
+  });
+
+  it('updateTaskAfterRun with null next_run (once task)', () => {
+    createTask({ ...baseTask, schedule_type: 'once' } as any);
+    updateTaskAfterRun('task-1', null, 'Done');
+    const task = getTaskById('task-1');
+    expect(task?.status).toBe('completed');
+  });
+});
+
+// --- message query LIMIT ---
 
 describe('message query LIMIT', () => {
   beforeEach(() => {
@@ -617,36 +842,41 @@ describe('message query LIMIT', () => {
   });
 });
 
-// --- RegisteredGroup isMain round-trip ---
+// --- group sync ---
 
-describe('registered group isMain', () => {
-  it('persists isMain=true through set/get round-trip', () => {
-    setRegisteredGroup('main@s.whatsapp.net', {
-      name: 'Main Chat',
-      folder: 'whatsapp_main',
-      trigger: '@Andy',
-      added_at: '2024-01-01T00:00:00.000Z',
-      isMain: true,
-    });
-
-    const groups = getAllRegisteredGroups();
-    const group = groups['main@s.whatsapp.net'];
-    expect(group).toBeDefined();
-    expect(group.isMain).toBe(true);
-    expect(group.folder).toBe('whatsapp_main');
+describe('group sync', () => {
+  it('returns null when no sync has occurred', () => {
+    expect(getLastGroupSync()).toBeNull();
   });
 
-  it('omits isMain for non-main groups', () => {
-    setRegisteredGroup('group@g.us', {
-      name: 'Family Chat',
-      folder: 'whatsapp_family-chat',
-      trigger: '@Andy',
-      added_at: '2024-01-01T00:00:00.000Z',
+  it('stores and retrieves last sync timestamp', () => {
+    setLastGroupSync();
+    const sync = getLastGroupSync();
+    expect(sync).toBeTruthy();
+  });
+});
+
+// --- getLastBotMessageTimestamp ---
+
+describe('getLastBotMessageTimestamp', () => {
+  it('returns undefined when no bot messages exist', () => {
+    expect(getLastBotMessageTimestamp('test@g.us', 'Bot')).toBeUndefined();
+  });
+
+  it('returns timestamp of last bot message', () => {
+    storeChatMetadata('test@g.us', '2024-01-01T00:00:00Z');
+    storeMessage({
+      id: 'msg-1',
+      chat_jid: 'test@g.us',
+      sender: 'bot',
+      sender_name: 'Bot',
+      content: 'Hello',
+      timestamp: '2024-01-01T12:00:00Z',
+      is_from_me: true,
+      is_bot_message: true,
     });
 
-    const groups = getAllRegisteredGroups();
-    const group = groups['group@g.us'];
-    expect(group).toBeDefined();
-    expect(group.isMain).toBeUndefined();
+    const ts = getLastBotMessageTimestamp('test@g.us', 'Bot');
+    expect(ts).toBe('2024-01-01T12:00:00Z');
   });
 });

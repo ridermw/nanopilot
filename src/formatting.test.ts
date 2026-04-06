@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
+import { vi } from 'vitest';
 import {
   ASSISTANT_NAME,
   getTriggerPattern,
@@ -10,9 +11,11 @@ import {
   formatMessages,
   formatOutbound,
   stripInternalTags,
+  routeOutbound,
+  findChannel,
 } from './router.js';
 import { parseTextStyles, parseSignalStyles } from './text-styles.js';
-import { NewMessage } from './types.js';
+import { Channel, NewMessage } from './types.js';
 
 function makeMsg(overrides: Partial<NewMessage> = {}): NewMessage {
   return {
@@ -402,6 +405,70 @@ describe('parseTextStyles — italic', () => {
   });
 });
 
+// --- stripInternalTags: no tags ---
+
+describe('stripInternalTags (no tags)', () => {
+  it('returns string unchanged when no internal tags', () => {
+    expect(stripInternalTags('just text')).toBe('just text');
+  });
+});
+
+// --- routeOutbound ---
+
+describe('routeOutbound', () => {
+  it('routes to the correct channel', async () => {
+    const sendMessage = vi.fn(async () => {});
+    const channels: Channel[] = [
+      {
+        name: 'mock-tg',
+        sendMessage,
+        connect: vi.fn(async () => {}),
+        disconnect: vi.fn(async () => {}),
+        ownsJid: (jid: string) => jid.includes('tg:'),
+        isConnected: () => true,
+      },
+    ];
+
+    await routeOutbound(channels, 'tg:123', 'hello');
+
+    expect(sendMessage).toHaveBeenCalledWith('tg:123', 'hello');
+  });
+
+  it('throws when no channel owns the JID', () => {
+    const channels: Channel[] = [
+      {
+        name: 'mock',
+        sendMessage: vi.fn(async () => {}),
+        connect: vi.fn(async () => {}),
+        disconnect: vi.fn(async () => {}),
+        ownsJid: () => false,
+        isConnected: () => true,
+      },
+    ];
+
+    expect(() => routeOutbound(channels, 'unknown@jid', 'test')).toThrow(
+      'No channel for JID',
+    );
+  });
+
+  it('skips disconnected channels', () => {
+    const channels: Channel[] = [
+      {
+        name: 'mock',
+        sendMessage: vi.fn(async () => {}),
+        connect: vi.fn(async () => {}),
+        disconnect: vi.fn(async () => {}),
+        ownsJid: () => true,
+        isConnected: () => false,
+      },
+    ];
+
+    expect(() => routeOutbound(channels, 'test@jid', 'test')).toThrow(
+      'No channel for JID',
+    );
+  });
+});
+
 describe('parseTextStyles — headings', () => {
   it('converts # heading on whatsapp', () => {
     expect(parseTextStyles('# Top', 'whatsapp')).toBe('*Top*');
@@ -603,5 +670,28 @@ describe('formatOutbound — channel-aware', () => {
 
   it('signal channel is passthrough — raw markdown preserved for parseSignalStyles', () => {
     expect(formatOutbound('**bold**', 'signal')).toBe('**bold**');
+  });
+});
+
+// --- findChannel ---
+
+describe('findChannel', () => {
+  it('returns the channel that owns the JID', () => {
+    const ch1: Channel = {
+      name: 'mock',
+      sendMessage: vi.fn(async () => {}),
+      connect: vi.fn(async () => {}),
+      disconnect: vi.fn(async () => {}),
+      ownsJid: (jid: string) => jid === 'match@jid',
+      isConnected: () => true,
+    };
+
+    const result = findChannel([ch1], 'match@jid');
+    expect(result).toBe(ch1);
+  });
+
+  it('returns undefined when no channel matches', () => {
+    const result = findChannel([], 'any@jid');
+    expect(result).toBeUndefined();
   });
 });
