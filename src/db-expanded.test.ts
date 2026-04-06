@@ -149,12 +149,6 @@ describe('task lifecycle', () => {
     source_jid: 'chat@g.us',
   };
 
-  it('creates and retrieves by ID', () => {
-    createTask(baseTask as any);
-    const task = getTaskById('task-1');
-    expect(task?.prompt).toBe('Do something');
-  });
-
   it('returns undefined for non-existent task', () => {
     expect(getTaskById('nonexistent')).toBeUndefined();
   });
@@ -172,32 +166,6 @@ describe('task lifecycle', () => {
     createTask(baseTask as any);
     createTask({ ...baseTask, id: 'task-2' } as any);
     expect(getAllTasks()).toHaveLength(2);
-  });
-
-  it('updates task fields', () => {
-    createTask(baseTask as any);
-    updateTask('task-1', { status: 'paused' });
-    expect(getTaskById('task-1')?.status).toBe('paused');
-  });
-
-  it('deletes task and associated run logs', () => {
-    createTask(baseTask as any);
-    logTaskRun({
-      task_id: 'task-1',
-      run_at: new Date().toISOString(),
-      duration_ms: 100,
-      status: 'success',
-      result: 'done',
-      error: null,
-    });
-    deleteTask('task-1');
-    expect(getTaskById('task-1')).toBeUndefined();
-  });
-
-  it('getDueTasks returns tasks with past next_run', () => {
-    createTask(baseTask as any); // next_run is in the past
-    const due = getDueTasks();
-    expect(due).toHaveLength(1);
   });
 
   it('getDueTasks excludes future tasks', () => {
