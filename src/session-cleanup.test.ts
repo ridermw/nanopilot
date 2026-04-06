@@ -65,7 +65,10 @@ describe('session-cleanup', () => {
     const { startSessionCleanup } = await import('./session-cleanup.js');
 
     mockedExecFile.mockImplementation((_cmd, _args, _opts, cb) => {
-      (cb as Function)(null, '[cleanup] Done — freed ~128K\n');
+      (cb as (...args: unknown[]) => void)(
+        null,
+        '[cleanup] Done — freed ~128K\n',
+      );
       return undefined as any;
     });
 
@@ -82,7 +85,7 @@ describe('session-cleanup', () => {
 
     const err = new Error('script failed');
     mockedExecFile.mockImplementation((_cmd, _args, _opts, cb) => {
-      (cb as Function)(err, '');
+      (cb as (...args: unknown[]) => void)(err, '');
       return undefined as any;
     });
 
@@ -101,7 +104,7 @@ describe('session-cleanup', () => {
     const { startSessionCleanup } = await import('./session-cleanup.js');
 
     mockedExecFile.mockImplementation((_cmd, _args, _opts, cb) => {
-      (cb as Function)(null, '');
+      (cb as (...args: unknown[]) => void)(null, '');
       return undefined as any;
     });
 
