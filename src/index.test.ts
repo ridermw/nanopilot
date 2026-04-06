@@ -96,6 +96,7 @@ vi.mock('./task-scheduler.js', () => ({
 import fs from 'fs';
 import { logger } from './logger.js';
 import {
+  getAllChats,
   getRouterState,
   getAllSessions,
   getAllRegisteredGroups,
@@ -106,9 +107,14 @@ import {
   deleteSession,
   setSession,
 } from './db.js';
-import { runContainerAgent } from './container-runner.js';
+import {
+  runContainerAgent,
+  writeGroupsSnapshot,
+  writeTasksSnapshot,
+} from './container-runner.js';
 import { resolveGroupFolderPath } from './group-folder.js';
 import { findChannel } from './router.js';
+import { getTriggerPattern } from './config.js';
 import {
   _loadState,
   _getOrRecoverCursor,
@@ -273,12 +279,140 @@ describe('index.ts orchestrator', () => {
         expect.stringContaining('Rejecting'),
       );
     });
+
+    it('does not overwrite existing CLAUDE.md', () => {
+      mockedFs.existsSync.mockReturnValue(true); // both group dir and CLAUDE.md exist
+      vi.mocked(resolveGroupFolderPath).mockReturnValue(
+        '/mock/groups/existing',
+      );
+
+      _registerGroup('chat-2', {
+        name: 'Existing Group',
+        folder: 'existing',
+        trigger: '@TestBot',
+        added_at: new Date().toISOString(),
+        isMain: false,
+      });
+
+      expect(setRegisteredGroup).toHaveBeenCalled();
+      // writeFileSync should NOT be called since CLAUDE.md already exists
+      expect(mockedFs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it('does not create CLAUDE.md when template does not exist', () => {
+      mockedFs.existsSync.mockReturnValue(false); // nothing exists
+      vi.mocked(resolveGroupFolderPath).mockReturnValue('/mock/groups/no_tpl');
+
+      _registerGroup('chat-3', {
+        name: 'No Template',
+        folder: 'no_tpl',
+        trigger: '@TestBot',
+        added_at: new Date().toISOString(),
+        isMain: false,
+      });
+
+      expect(setRegisteredGroup).toHaveBeenCalled();
+      // Neither the group CLAUDE.md nor the template exist → no write
+      expect(mockedFs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it('uses main template when isMain is true', () => {
+      mockedFs.existsSync.mockImplementation((p) => {
+        const ps = String(p);
+        if (ps.includes('CLAUDE.md') && ps.includes('main_grp')) return false;
+        if (ps.endsWith('/mock/groups/main/CLAUDE.md')) return true;
+        return false;
+      });
+      mockedFs.readFileSync.mockReturnValue(
+        '# Andy\nYou are Andy, the main assistant.',
+      );
+      vi.mocked(resolveGroupFolderPath).mockReturnValue(
+        '/mock/groups/main_grp',
+      );
+
+      _registerGroup('chat-main', {
+        name: 'Main Group',
+        folder: 'main_grp',
+        trigger: '@TestBot',
+        added_at: new Date().toISOString(),
+        isMain: true,
+      });
+
+      // Should read from 'main' template, not 'global'
+      expect(mockedFs.readFileSync).toHaveBeenCalledWith(
+        '/mock/groups/main/CLAUDE.md',
+        'utf-8',
+      );
+      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('CLAUDE.md'),
+        expect.stringContaining('# TestBot'),
+      );
+    });
   });
 
   describe('getAvailableGroups', () => {
     it('returns empty array when no groups registered', () => {
       const groups = getAvailableGroups();
       expect(groups).toEqual([]);
+    });
+
+    it('excludes __group_sync__ and non-group chats', () => {
+      vi.mocked(getAllChats).mockReturnValue([
+        {
+          jid: '__group_sync__',
+          name: 'Sync',
+          last_message_time: '',
+          is_group: true,
+        },
+        {
+          jid: 'chat-1',
+          name: 'DM',
+          last_message_time: '2024-01-01',
+          is_group: false,
+        },
+        {
+          jid: 'grp-1',
+          name: 'Real Group',
+          last_message_time: '2024-01-02',
+          is_group: true,
+        },
+      ] as any);
+
+      const result = getAvailableGroups();
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual(
+        expect.objectContaining({ jid: 'grp-1', name: 'Real Group' }),
+      );
+    });
+
+    it('marks registered groups with isRegistered flag', () => {
+      _setRegisteredGroups({
+        'grp-1': {
+          name: 'Registered',
+          folder: 'reg',
+          trigger: '@Bot',
+          added_at: new Date().toISOString(),
+        },
+      });
+      vi.mocked(getAllChats).mockReturnValue([
+        {
+          jid: 'grp-1',
+          name: 'Registered',
+          last_message_time: '2024-01-01',
+          is_group: true,
+        },
+        {
+          jid: 'grp-2',
+          name: 'Unregistered',
+          last_message_time: '2024-01-02',
+          is_group: true,
+        },
+      ] as any);
+
+      const result = getAvailableGroups();
+      expect(result).toHaveLength(2);
+      expect(result.find((g) => g.jid === 'grp-1')!.isRegistered).toBe(true);
+      expect(result.find((g) => g.jid === 'grp-2')!.isRegistered).toBe(false);
     });
   });
 
@@ -329,6 +463,358 @@ describe('index.ts orchestrator', () => {
         expect.objectContaining({ chatJid: 'chat-1' }),
         expect.stringContaining('No channel'),
       );
+    });
+
+    it('returns true without processing when non-main group has no trigger', async () => {
+      _setRegisteredGroups({
+        'chat-1': {
+          name: 'G1',
+          folder: 'g1',
+          trigger: '@Bot',
+          added_at: new Date().toISOString(),
+          isMain: false,
+          requiresTrigger: undefined, // defaults to needing trigger
+        },
+      });
+      const mockChannel = {
+        name: 'mock',
+        sendMessage: vi.fn().mockResolvedValue(undefined),
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        ownsJid: vi.fn(() => true),
+        isConnected: vi.fn(() => true),
+        setTyping: vi.fn().mockResolvedValue(undefined),
+      };
+      vi.mocked(findChannel).mockReturnValue(mockChannel);
+      vi.mocked(getMessagesSince).mockReturnValue([
+        {
+          chat_jid: 'chat-1',
+          sender: 'user1',
+          sender_name: 'User',
+          content: 'Hello without trigger',
+          timestamp: '2024-01-01T00:00:01Z',
+          is_from_me: false,
+          is_bot_message: false,
+        },
+      ] as any);
+      // getTriggerPattern returns a regex that won't match 'Hello without trigger'
+      vi.mocked(getTriggerPattern).mockReturnValue(/@Bot/i);
+
+      const result = await _processGroupMessages('chat-1');
+      expect(result).toBe(true);
+      // runAgent should NOT have been called
+      expect(runContainerAgent).not.toHaveBeenCalled();
+    });
+
+    it('processes messages when non-main group has trigger', async () => {
+      _setRegisteredGroups({
+        'chat-1': {
+          name: 'G1',
+          folder: 'g1',
+          trigger: '@Bot',
+          added_at: new Date().toISOString(),
+          isMain: false,
+        },
+      });
+      const mockChannel = {
+        name: 'mock',
+        sendMessage: vi.fn().mockResolvedValue(undefined),
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        ownsJid: vi.fn(() => true),
+        isConnected: vi.fn(() => true),
+        setTyping: vi.fn().mockResolvedValue(undefined),
+      };
+      vi.mocked(findChannel).mockReturnValue(mockChannel);
+      vi.mocked(getMessagesSince).mockReturnValue([
+        {
+          chat_jid: 'chat-1',
+          sender: 'user1',
+          sender_name: 'User',
+          content: '@Bot help me',
+          timestamp: '2024-01-01T00:00:01Z',
+          is_from_me: false,
+          is_bot_message: false,
+        },
+      ] as any);
+      vi.mocked(getTriggerPattern).mockReturnValue(/@Bot/i);
+      vi.mocked(runContainerAgent).mockResolvedValue({
+        status: 'success',
+        result: 'Done',
+      });
+
+      const result = await _processGroupMessages('chat-1');
+      expect(result).toBe(true);
+      expect(runContainerAgent).toHaveBeenCalled();
+    });
+
+    it('sends streamed output to channel and strips internal blocks', async () => {
+      _setRegisteredGroups({
+        'chat-1': {
+          name: 'G1',
+          folder: 'g1',
+          trigger: '@Bot',
+          added_at: new Date().toISOString(),
+          isMain: true,
+        },
+      });
+      const mockChannel = {
+        name: 'mock',
+        sendMessage: vi.fn().mockResolvedValue(undefined),
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        ownsJid: vi.fn(() => true),
+        isConnected: vi.fn(() => true),
+        setTyping: vi.fn().mockResolvedValue(undefined),
+      };
+      vi.mocked(findChannel).mockReturnValue(mockChannel);
+      vi.mocked(getMessagesSince).mockReturnValue([
+        {
+          chat_jid: 'chat-1',
+          sender: 'user1',
+          sender_name: 'User',
+          content: 'hi',
+          timestamp: '2024-01-01T00:00:01Z',
+          is_from_me: false,
+          is_bot_message: false,
+        },
+      ] as any);
+
+      vi.mocked(runContainerAgent).mockImplementation(
+        async (_group, _input, _onProcess, onOutput) => {
+          if (onOutput) {
+            await onOutput({
+              status: 'success',
+              result: '<internal>thinking hard</internal>Hello there!',
+              newSessionId: 'sess-1',
+            });
+          }
+          return {
+            status: 'success',
+            result: 'Hello there!',
+            newSessionId: 'sess-1',
+          };
+        },
+      );
+
+      await _processGroupMessages('chat-1');
+
+      // Internal block stripped, only 'Hello there!' sent
+      expect(mockChannel.sendMessage).toHaveBeenCalledWith(
+        'chat-1',
+        'Hello there!',
+      );
+    });
+
+    it('does not send empty text after stripping internal blocks', async () => {
+      _setRegisteredGroups({
+        'chat-1': {
+          name: 'G1',
+          folder: 'g1',
+          trigger: '@Bot',
+          added_at: new Date().toISOString(),
+          isMain: true,
+        },
+      });
+      const mockChannel = {
+        name: 'mock',
+        sendMessage: vi.fn().mockResolvedValue(undefined),
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        ownsJid: vi.fn(() => true),
+        isConnected: vi.fn(() => true),
+        setTyping: vi.fn().mockResolvedValue(undefined),
+      };
+      vi.mocked(findChannel).mockReturnValue(mockChannel);
+      vi.mocked(getMessagesSince).mockReturnValue([
+        {
+          chat_jid: 'chat-1',
+          sender: 'user1',
+          sender_name: 'User',
+          content: 'hi',
+          timestamp: '2024-01-01T00:00:01Z',
+          is_from_me: false,
+          is_bot_message: false,
+        },
+      ] as any);
+
+      vi.mocked(runContainerAgent).mockImplementation(
+        async (_group, _input, _onProcess, onOutput) => {
+          if (onOutput) {
+            // All content is internal → nothing to send
+            await onOutput({
+              status: 'success',
+              result: '<internal>just thinking</internal>',
+            });
+          }
+          return { status: 'success', result: '' };
+        },
+      );
+
+      await _processGroupMessages('chat-1');
+
+      expect(mockChannel.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('does not roll back cursor when error occurs after output was sent', async () => {
+      _setRegisteredGroups({
+        'chat-1': {
+          name: 'G1',
+          folder: 'g1',
+          trigger: '@Bot',
+          added_at: new Date().toISOString(),
+          isMain: true,
+        },
+      });
+      const mockChannel = {
+        name: 'mock',
+        sendMessage: vi.fn().mockResolvedValue(undefined),
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        ownsJid: vi.fn(() => true),
+        isConnected: vi.fn(() => true),
+        setTyping: vi.fn().mockResolvedValue(undefined),
+      };
+      vi.mocked(findChannel).mockReturnValue(mockChannel);
+      vi.mocked(getMessagesSince).mockReturnValue([
+        {
+          chat_jid: 'chat-1',
+          sender: 'user1',
+          sender_name: 'User',
+          content: 'do something',
+          timestamp: '2024-01-01T00:00:01Z',
+          is_from_me: false,
+          is_bot_message: false,
+        },
+      ] as any);
+
+      vi.mocked(runContainerAgent).mockImplementation(
+        async (_group, _input, _onProcess, onOutput) => {
+          if (onOutput) {
+            // First: send output successfully
+            await onOutput({ status: 'success', result: 'Partial response' });
+            // Then: report error
+            await onOutput({
+              status: 'error',
+              result: '',
+              error: 'something broke',
+            });
+          }
+          return { status: 'error', result: '', error: 'something broke' };
+        },
+      );
+
+      const result = await _processGroupMessages('chat-1');
+      // Should return true (no rollback) since user already got output
+      expect(result).toBe(true);
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ group: 'G1' }),
+        expect.stringContaining('skipping cursor rollback'),
+      );
+    });
+
+    it('rolls back cursor on error when no output was sent', async () => {
+      _setRegisteredGroups({
+        'chat-1': {
+          name: 'G1',
+          folder: 'g1',
+          trigger: '@Bot',
+          added_at: new Date().toISOString(),
+          isMain: true,
+        },
+      });
+      const mockChannel = {
+        name: 'mock',
+        sendMessage: vi.fn().mockResolvedValue(undefined),
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        ownsJid: vi.fn(() => true),
+        isConnected: vi.fn(() => true),
+        setTyping: vi.fn().mockResolvedValue(undefined),
+      };
+      vi.mocked(findChannel).mockReturnValue(mockChannel);
+      vi.mocked(getMessagesSince).mockReturnValue([
+        {
+          chat_jid: 'chat-1',
+          sender: 'user1',
+          sender_name: 'User',
+          content: 'do something',
+          timestamp: '2024-01-01T00:00:01Z',
+          is_from_me: false,
+          is_bot_message: false,
+        },
+      ] as any);
+
+      vi.mocked(runContainerAgent).mockResolvedValue({
+        status: 'error',
+        result: '',
+        error: 'container crashed',
+      });
+
+      const result = await _processGroupMessages('chat-1');
+      expect(result).toBe(false);
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ group: 'G1' }),
+        expect.stringContaining('rolled back'),
+      );
+    });
+
+    it('calls closeStdin after idle timeout', async () => {
+      vi.useFakeTimers();
+      _setRegisteredGroups({
+        'chat-1': {
+          name: 'G1',
+          folder: 'g1',
+          trigger: '@Bot',
+          added_at: new Date().toISOString(),
+          isMain: true,
+        },
+      });
+      const mockChannel = {
+        name: 'mock',
+        sendMessage: vi.fn().mockResolvedValue(undefined),
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        ownsJid: vi.fn(() => true),
+        isConnected: vi.fn(() => true),
+        setTyping: vi.fn().mockResolvedValue(undefined),
+      };
+      vi.mocked(findChannel).mockReturnValue(mockChannel);
+      vi.mocked(getMessagesSince).mockReturnValue([
+        {
+          chat_jid: 'chat-1',
+          sender: 'user1',
+          sender_name: 'User',
+          content: 'hello',
+          timestamp: '2024-01-01T00:00:01Z',
+          is_from_me: false,
+          is_bot_message: false,
+        },
+      ] as any);
+
+      // Simulate successful agent output and advance time past the idle timeout.
+      vi.mocked(runContainerAgent).mockImplementation(
+        async (_group, _input, _onProcess, onOutput) => {
+          if (onOutput) {
+            await onOutput({ status: 'success', result: 'response text' });
+            // Advance past IDLE_TIMEOUT (30000ms from mock config)
+            vi.advanceTimersByTime(31000);
+          }
+          return { status: 'success', result: 'response text' };
+        },
+      );
+
+      await _processGroupMessages('chat-1');
+
+      // The idle timer should have triggered closeStdin
+      // Since GroupQueue is a mock class, the queue instance is created in index.ts module scope.
+      // We verify via logger that idle timeout was logged
+      expect(logger.debug).toHaveBeenCalledWith(
+        expect.objectContaining({ group: 'G1' }),
+        expect.stringContaining('Idle timeout'),
+      );
+
+      vi.useRealTimers();
     });
   });
 
@@ -412,6 +898,129 @@ describe('index.ts orchestrator', () => {
 
       expect(setSession).toHaveBeenCalledWith('test_group', 'new-sess-123');
     });
+
+    it('wrappedOnOutput tracks session from streamed results', async () => {
+      vi.mocked(runContainerAgent).mockImplementation(
+        async (_group, _input, _onProcess, onOutput) => {
+          if (onOutput) {
+            await onOutput({
+              status: 'success',
+              result: 'partial',
+              newSessionId: 'stream-sess-1',
+            });
+          }
+          return { status: 'success', result: 'final' };
+        },
+      );
+
+      const outputCb = vi.fn();
+      await _runAgent(testGroup, 'prompt', 'chat-1', outputCb);
+
+      // wrappedOnOutput should have saved session and called original callback
+      expect(setSession).toHaveBeenCalledWith('test_group', 'stream-sess-1');
+      expect(outputCb).toHaveBeenCalledWith(
+        expect.objectContaining({ newSessionId: 'stream-sess-1' }),
+      );
+    });
+
+    it('detects session timeout stale pattern', async () => {
+      _setRegisteredGroups({ 'chat-1': testGroup });
+      vi.mocked(getAllSessions).mockReturnValue({ test_group: 'old-session' });
+      vi.mocked(getRouterState).mockReturnValue('');
+      vi.mocked(getAllRegisteredGroups).mockReturnValue({});
+      _loadState();
+
+      vi.mocked(runContainerAgent).mockResolvedValue({
+        status: 'error',
+        error: 'session timeout waiting for response',
+        result: '',
+      });
+
+      await _runAgent(testGroup, 'prompt', 'chat-1');
+
+      expect(deleteSession).toHaveBeenCalledWith('test_group');
+    });
+
+    it('detects unresponsive session stale pattern', async () => {
+      _setRegisteredGroups({ 'chat-1': testGroup });
+      vi.mocked(getAllSessions).mockReturnValue({ test_group: 'old-session' });
+      vi.mocked(getRouterState).mockReturnValue('');
+      vi.mocked(getAllRegisteredGroups).mockReturnValue({});
+      _loadState();
+
+      vi.mocked(runContainerAgent).mockResolvedValue({
+        status: 'error',
+        error: 'unresponsive session detected, aborting',
+        result: '',
+      });
+
+      await _runAgent(testGroup, 'prompt', 'chat-1');
+
+      expect(deleteSession).toHaveBeenCalledWith('test_group');
+    });
+
+    it('detects resume fail stale pattern', async () => {
+      _setRegisteredGroups({ 'chat-1': testGroup });
+      vi.mocked(getAllSessions).mockReturnValue({ test_group: 'old-session' });
+      vi.mocked(getRouterState).mockReturnValue('');
+      vi.mocked(getAllRegisteredGroups).mockReturnValue({});
+      _loadState();
+
+      vi.mocked(runContainerAgent).mockResolvedValue({
+        status: 'error',
+        error: 'resume failed for session abc-123',
+        result: '',
+      });
+
+      await _runAgent(testGroup, 'prompt', 'chat-1');
+
+      expect(deleteSession).toHaveBeenCalledWith('test_group');
+    });
+
+    it('does not clear session on non-stale error', async () => {
+      _setRegisteredGroups({ 'chat-1': testGroup });
+      vi.mocked(getAllSessions).mockReturnValue({
+        test_group: 'existing-session',
+      });
+      vi.mocked(getRouterState).mockReturnValue('');
+      vi.mocked(getAllRegisteredGroups).mockReturnValue({});
+      _loadState();
+
+      vi.mocked(runContainerAgent).mockResolvedValue({
+        status: 'error',
+        error: 'rate limit exceeded',
+        result: '',
+      });
+
+      await _runAgent(testGroup, 'prompt', 'chat-1');
+
+      expect(deleteSession).not.toHaveBeenCalled();
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ error: 'rate limit exceeded' }),
+        'Container agent error',
+      );
+    });
+
+    it('writes task and group snapshots before running', async () => {
+      vi.mocked(runContainerAgent).mockResolvedValue({
+        status: 'success',
+        result: 'ok',
+      });
+
+      await _runAgent(testGroup, 'prompt', 'chat-1');
+
+      expect(writeTasksSnapshot).toHaveBeenCalledWith(
+        'test_group',
+        false, // isMain = false for testGroup
+        expect.any(Array),
+      );
+      expect(writeGroupsSnapshot).toHaveBeenCalledWith(
+        'test_group',
+        false,
+        expect.any(Array),
+        expect.any(Set),
+      );
+    });
   });
 
   describe('recoverPendingMessages', () => {
@@ -419,6 +1028,86 @@ describe('index.ts orchestrator', () => {
       _setRegisteredGroups({});
       // Should not throw when no groups
       expect(() => _recoverPendingMessages()).not.toThrow();
+    });
+
+    it('enqueues groups with pending messages', async () => {
+      _setRegisteredGroups({
+        'chat-1': {
+          name: 'G1',
+          folder: 'g1',
+          trigger: '@Bot',
+          added_at: new Date().toISOString(),
+          isMain: true,
+        },
+      });
+      vi.mocked(getMessagesSince).mockReturnValue([
+        {
+          chat_jid: 'chat-1',
+          sender: 'user1',
+          sender_name: 'User',
+          content: 'unprocessed msg',
+          timestamp: '2024-01-01T00:00:01Z',
+          is_from_me: false,
+          is_bot_message: false,
+        },
+      ] as any);
+
+      _recoverPendingMessages();
+
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ group: 'G1', pendingCount: 1 }),
+        expect.stringContaining('Recovery'),
+      );
+    });
+
+    it('only enqueues groups that have pending messages', () => {
+      _setRegisteredGroups({
+        'chat-1': {
+          name: 'G1',
+          folder: 'g1',
+          trigger: '@Bot',
+          added_at: new Date().toISOString(),
+          isMain: true,
+        },
+        'chat-2': {
+          name: 'G2',
+          folder: 'g2',
+          trigger: '@Bot',
+          added_at: new Date().toISOString(),
+          isMain: false,
+        },
+      });
+      vi.mocked(getMessagesSince).mockImplementation((chatJid: string) => {
+        if (chatJid === 'chat-1') {
+          return [
+            {
+              chat_jid: 'chat-1',
+              sender: 'user1',
+              sender_name: 'User',
+              content: 'pending',
+              timestamp: '2024-01-01T00:00:01Z',
+              is_from_me: false,
+              is_bot_message: false,
+            },
+          ] as any;
+        }
+        return []; // chat-2 has no pending
+      });
+
+      _recoverPendingMessages();
+
+      // Only chat-1 should have been logged as having recovery messages
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ group: 'G1', pendingCount: 1 }),
+        expect.stringContaining('Recovery'),
+      );
+      // G2 should NOT have been logged for recovery
+      const recoveryCalls = vi
+        .mocked(logger.info)
+        .mock.calls.filter(
+          (call) => typeof call[1] === 'string' && call[1].includes('Recovery'),
+        );
+      expect(recoveryCalls).toHaveLength(1);
     });
   });
 
