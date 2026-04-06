@@ -29,13 +29,20 @@ export function setupTestEnv(): void {
   _initTestDatabase();
 }
 
+let _ingestCounter = 0;
+
 /** Store a sequence of messages and return them with generated IDs */
 export function ingestMessages(
   chatJid: string,
   messages: Array<Omit<NewMessage, 'id'>>,
 ): NewMessage[] {
-  return messages.map((msg, i) => {
-    const full: NewMessage = { ...msg, id: `msg-${Date.now()}-${i}` };
+  return messages.map((msg) => {
+    if (msg.chat_jid !== chatJid) {
+      throw new Error(
+        `ingestMessages chatJid mismatch: expected "${chatJid}", got "${msg.chat_jid}"`,
+      );
+    }
+    const full: NewMessage = { ...msg, id: `msg-${++_ingestCounter}` };
     storeMessage(full);
     return full;
   });
@@ -44,7 +51,7 @@ export function ingestMessages(
 /** Create a standard test message with sensible defaults */
 export function makeMessage(overrides: Partial<NewMessage> = {}): NewMessage {
   return {
-    id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    id: `msg-${++_ingestCounter}`,
     chat_jid: 'test:group1',
     sender: 'user-1',
     sender_name: 'TestUser',
