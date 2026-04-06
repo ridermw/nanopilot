@@ -142,16 +142,21 @@ describeIf('E2E Live: Real Copilot agent session', () => {
     const result = await new Promise<string>((resolve, reject) => {
       const proc = spawn('docker', args, { stdio: ['pipe', 'pipe', 'pipe'] });
       let stdout = '';
+      let stderr = '';
       proc.stdout.on('data', (d) => { stdout += d.toString(); });
-      proc.stderr.on('data', () => {}); // consume stderr
+      proc.stderr.on('data', (d) => { stderr += d.toString(); });
       proc.stdin.write(JSON.stringify(input));
       proc.stdin.end();
       const t = setTimeout(() => {
         try { execSync(`docker stop ${containerName}`, { stdio: 'pipe' }); } catch {}
-        reject(new Error('Timeout'));
+        reject(new Error(`Timeout.\nStdout: ${stdout}\nStderr: ${stderr}`));
       }, 60_000);
       proc.on('close', (code) => {
         clearTimeout(t);
+        if (code !== 0) {
+          reject(new Error(`Container exited with code ${code}.\nStdout: ${stdout}\nStderr: ${stderr}`));
+          return;
+        }
         resolve(stdout);
       });
     });
@@ -161,15 +166,14 @@ describeIf('E2E Live: Real Copilot agent session', () => {
     const startIdx = result.indexOf(startMarker);
     const endIdx = result.indexOf(endMarker);
 
-    if (startIdx > -1 && endIdx > startIdx) {
-      const output = JSON.parse(result.slice(startIdx + startMarker.length, endIdx).trim());
-      // If we got a session ID, verify it's a non-empty string
-      if (output.newSessionId) {
-        expect(typeof output.newSessionId).toBe('string');
-        expect(output.newSessionId.length).toBeGreaterThan(0);
-      }
+    expect(startIdx).toBeGreaterThan(-1);
+    expect(endIdx).toBeGreaterThan(startIdx);
+
+    const output = JSON.parse(result.slice(startIdx + startMarker.length, endIdx).trim());
+    // If we got a session ID, verify it's a non-empty string
+    if (output.newSessionId) {
+      expect(typeof output.newSessionId).toBe('string');
+      expect(output.newSessionId.length).toBeGreaterThan(0);
     }
-    // If no markers found, the test still passes — the container may have errored
-    // due to Docker not being available, which is fine for a gated test
   }, 120_000);
 });

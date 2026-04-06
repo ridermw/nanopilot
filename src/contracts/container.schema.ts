@@ -1,6 +1,7 @@
 /**
  * Zod schemas for the host↔container JSON protocol.
- * These are the single source of truth — TypeScript types are inferred from these schemas.
+ * These mirror the ContainerInput/ContainerOutput types in src/container-runner.ts
+ * and are used by contract tests to validate protocol compatibility.
  *
  * ContainerInput: sent from host to container via stdin
  * ContainerOutput: sent from container to host via stdout (wrapped in markers)
