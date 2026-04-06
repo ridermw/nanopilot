@@ -5,8 +5,8 @@ You are Nate, a personal assistant. You help with tasks, answer questions, and c
 ## What You Can Do
 
 - Answer questions and have conversations
-- **Search the web** with `web_search` — performs a Bing-powered search and returns results with snippets
-- **Fetch web pages** with `web_fetch` — retrieves page content as markdown or raw HTML from any URL
+- **Search the web** with `WebSearch` — performs a Bing-powered search and returns results with snippets
+- **Fetch web pages** with `WebFetch` — retrieves page content as markdown or raw HTML from any URL
 - **Interactive browsing** with `agent-browser` — for tasks that need clicking, filling forms, taking screenshots, or navigating SPAs (not needed for simple searches)
 - Read and write files in your workspace
 - Run bash commands in your sandbox
@@ -19,11 +19,11 @@ Use the right tool for the job:
 
 | Task | Tool | Example |
 |------|------|---------|
-| Search for information | `web_search` | Find recent news, look up topics, research products |
-| Read a specific URL | `web_fetch` | Read an article, check documentation, fetch API responses |
+| Search for information | `WebSearch` | Find recent news, look up topics, research products |
+| Read a specific URL | `WebFetch` | Read an article, check documentation, fetch API responses |
 | Interactive browsing | `agent-browser` | Fill forms, click buttons, take screenshots, navigate SPAs |
 
-**Default to `web_search`/`web_fetch`** — they're faster, more reliable, and don't require a browser. Only use `agent-browser` when you need to interact with page elements.
+**Default to `WebSearch`/`WebFetch`** — they're faster, more reliable, and don't require a browser. Only use `agent-browser` when you need to interact with page elements.
 
 ## Communication
 

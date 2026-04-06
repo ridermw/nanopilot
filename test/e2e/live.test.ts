@@ -165,11 +165,11 @@ describeIf('E2E Live: Real Copilot agent session', () => {
     }
   }, 120_000);
 
-  it('agent uses web_search/web_fetch for web research (not agent-browser)', async () => {
+  it('agent uses WebSearch/WebFetch for web research (not agent-browser)', async () => {
     const dirs = createTestDirs(tempDir, 'websearch');
 
     const input = {
-      prompt: '<messages><message sender="TestUser" timestamp="2024-01-01T12:00:00Z">Search the web for "NanoClaw GitHub AI assistant" and tell me what you found. Use web_search, not agent-browser.</message></messages>',
+      prompt: '<messages><message sender="TestUser" timestamp="2024-01-01T12:00:00Z">Search the web for "NanoClaw GitHub AI assistant" and tell me what you found. Use WebSearch, not agent-browser.</message></messages>',
       groupFolder: 'websearch',
       chatJid: 'test:websearch-e2e',
       isMain: false,
@@ -187,12 +187,14 @@ describeIf('E2E Live: Real Copilot agent session', () => {
     // Tool usage assertions: stderr contains "Tool: <name>" lines from agent-runner
     const toolLines = stderr.split('\n').filter((l) => l.includes('Tool: '));
     const toolNames = toolLines.map((l) => l.match(/Tool: (.+)/)?.[1]?.trim()).filter(Boolean);
+    const toolNamesLower = toolNames.map((t) => t!.toLowerCase());
 
-    // Should have used web_search or web_fetch (built-in Copilot tools)
-    const usedWebTool = toolNames.some(
-      (t) => t === 'web_search' || t === 'web_fetch' || t === 'fetch_webpage',
+    // Should have used WebSearch/WebFetch (built-in Copilot tools)
+    // Tool names may appear as WebSearch/WebFetch or web_search/web_fetch depending on SDK version
+    const usedWebTool = toolNamesLower.some(
+      (t) => t === 'websearch' || t === 'webfetch' || t === 'web_search' || t === 'web_fetch' || t === 'fetch_webpage',
     );
-    expect(usedWebTool, `Expected web_search/web_fetch in tools used: [${toolNames.join(', ')}]`).toBe(true);
+    expect(usedWebTool, `Expected WebSearch/WebFetch in tools used: [${toolNames.join(', ')}]`).toBe(true);
 
     // Should NOT have launched agent-browser for a simple search
     const usedBrowser = toolNames.some(
