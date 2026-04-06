@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>Your personal AI assistant, powered by GitHub Copilot.</strong><br>
-  Secure containerized agents. No Anthropic API key required.
+  Secure containerized agents.
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@ Millions of developers already have GitHub Copilot through work or personal subs
 | | Traditional Approach | NanoPilot |
 |---|---|---|
 | **AI Engine** | Claude Agent SDK | GitHub Copilot SDK |
-| **Auth** | Anthropic API key + OneCLI vault | `gh auth token` — that's it |
+| **Auth** |  API key + OneCLI vault | `gh auth token` — that's it |
 | **Models** | Claude family | GPT-4.1, Claude Sonnet, o3, Gemini — anything Copilot offers |
 | **Cost** | Pay-per-token (Anthropic) | Included with Copilot subscription |
 | **Token Security** | OneCLI credential proxy | Stdin injection — never in env vars |

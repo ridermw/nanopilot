@@ -281,7 +281,7 @@ describe('mount-security', () => {
     it('blocks mounts when host path does not exist', () => {
       mockedFs.existsSync.mockReturnValue(true);
       mockedFs.readFileSync.mockReturnValue(validAllowlist());
-      mockedFs.realpathSync.mockImplementation((p) => {
+      mockedFs.realpathSync.mockImplementation((_p) => {
         throw new Error('ENOENT');
       });
 
