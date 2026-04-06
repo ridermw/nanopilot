@@ -55,7 +55,8 @@ async function runContainer(
   mounts: { groupDir: string; copilotDir: string; ipcDir: string; globalDir: string },
   timeoutMs = 60_000,
 ): Promise<ContainerResult> {
-  const containerName = `nanopilot-live-e2e-${Date.now()}`;
+  const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const containerName = `nanopilot-live-e2e-${uniqueId}`;
   const args = [
     'run', '-i', '--rm', '--name', containerName,
     '-v', `${mounts.groupDir}:/workspace/group`,
@@ -100,8 +101,17 @@ async function runContainer(
       }
 
       const jsonStr = stdout.slice(startIdx + startMarker.length, endIdx).trim();
-      const output = JSON.parse(jsonStr);
-      resolve({ stdout, stderr, output });
+      try {
+        const output = JSON.parse(jsonStr);
+        resolve({ stdout, stderr, output });
+      } catch (parseErr) {
+        reject(new Error(
+          `Failed to parse container JSON output.\n` +
+          `Extracted JSON: ${jsonStr.slice(0, 500)}\n` +
+          `Stderr: ${stderr.slice(0, 500)}`,
+          { cause: parseErr },
+        ));
+      }
     });
   });
 }
