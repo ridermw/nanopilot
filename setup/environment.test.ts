@@ -95,7 +95,7 @@ describe('credentials detection', () => {
     expect(hasCredentials).toBe(false);
   });
 
-  it('returns false for old Anthropic credentials (regression)', () => {
+  it('returns false for non-Copilot credentials (regression)', () => {
     const content = 'ANTHROPIC_API_KEY=sk-ant-test123\nCLAUDE_CODE_OAUTH_TOKEN=token';
     const hasCredentials =
       /^COPILOT_GITHUB_TOKEN=/m.test(content);

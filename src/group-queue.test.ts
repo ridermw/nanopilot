@@ -8,6 +8,11 @@ vi.mock('./config.js', () => ({
   MAX_CONCURRENT_CONTAINERS: 2,
 }));
 
+// Mock logger so we can assert on log calls
+vi.mock('./logger.js', () => ({
+  logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}));
+
 // Mock fs operations used by sendMessage/closeStdin
 vi.mock('fs', async () => {
   const actual = await vi.importActual<typeof import('fs')>('fs');
@@ -480,5 +485,318 @@ describe('GroupQueue', () => {
 
     resolveProcess!();
     await vi.advanceTimersByTimeAsync(10);
+  });
+
+  // --- enqueueTask dedup: task already queued ---
+
+  it('rejects duplicate enqueue of an already-queued task', async () => {
+    let resolveProcess: () => void;
+    const processMessages = vi.fn(async () => {
+      await new Promise<void>((resolve) => {
+        resolveProcess = resolve;
+      });
+      return true;
+    });
+    queue.setProcessMessagesFn(processMessages);
+
+    // Occupy the slot with a message container
+    queue.enqueueMessageCheck('group1@g.us');
+    await vi.advanceTimersByTimeAsync(10);
+
+    // Enqueue a task while container is active → goes into pendingTasks
+    const taskFn1 = vi.fn(async () => {});
+    queue.enqueueTask('group1@g.us', 'task-A', taskFn1);
+
+    // Same taskId again → should be deduped
+    const taskFn2 = vi.fn(async () => {});
+    queue.enqueueTask('group1@g.us', 'task-A', taskFn2);
+
+    resolveProcess!();
+    await vi.advanceTimersByTimeAsync(10);
+
+    expect(taskFn1).toHaveBeenCalledTimes(1);
+    expect(taskFn2).not.toHaveBeenCalled();
+  });
+
+  // --- sendMessage guard paths ---
+
+  it('sendMessage returns false when no active container exists', () => {
+    const result = queue.sendMessage('nonexistent@g.us', 'hello');
+    expect(result).toBe(false);
+  });
+
+  it('sendMessage returns false when groupFolder is not set', async () => {
+    let resolveProcess: () => void;
+    const processMessages = vi.fn(async () => {
+      await new Promise<void>((resolve) => {
+        resolveProcess = resolve;
+      });
+      return true;
+    });
+    queue.setProcessMessagesFn(processMessages);
+    queue.enqueueMessageCheck('group1@g.us');
+    await vi.advanceTimersByTimeAsync(10);
+
+    // Register without groupFolder — state.groupFolder stays null
+    queue.registerProcess('group1@g.us', {} as any, 'container-1');
+
+    const result = queue.sendMessage('group1@g.us', 'hello');
+    expect(result).toBe(false);
+
+    resolveProcess!();
+    await vi.advanceTimersByTimeAsync(10);
+  });
+
+  // --- sendMessage error paths ---
+
+  it('sendMessage returns false when mkdirSync throws', async () => {
+    const fs = await import('fs');
+    let resolveProcess: () => void;
+    const processMessages = vi.fn(async () => {
+      await new Promise<void>((resolve) => {
+        resolveProcess = resolve;
+      });
+      return true;
+    });
+    queue.setProcessMessagesFn(processMessages);
+    queue.enqueueMessageCheck('group1@g.us');
+    await vi.advanceTimersByTimeAsync(10);
+    queue.registerProcess(
+      'group1@g.us',
+      {} as any,
+      'container-1',
+      'test-group',
+    );
+
+    vi.mocked(fs.default.mkdirSync).mockImplementationOnce(() => {
+      throw new Error('EACCES');
+    });
+
+    const result = queue.sendMessage('group1@g.us', 'hello');
+    expect(result).toBe(false);
+
+    resolveProcess!();
+    await vi.advanceTimersByTimeAsync(10);
+  });
+
+  it('sendMessage returns false when writeFileSync throws', async () => {
+    const fs = await import('fs');
+    let resolveProcess: () => void;
+    const processMessages = vi.fn(async () => {
+      await new Promise<void>((resolve) => {
+        resolveProcess = resolve;
+      });
+      return true;
+    });
+    queue.setProcessMessagesFn(processMessages);
+    queue.enqueueMessageCheck('group1@g.us');
+    await vi.advanceTimersByTimeAsync(10);
+    queue.registerProcess(
+      'group1@g.us',
+      {} as any,
+      'container-1',
+      'test-group',
+    );
+
+    vi.mocked(fs.default.writeFileSync).mockImplementationOnce(() => {
+      throw new Error('ENOSPC');
+    });
+
+    const result = queue.sendMessage('group1@g.us', 'hello');
+    expect(result).toBe(false);
+
+    resolveProcess!();
+    await vi.advanceTimersByTimeAsync(10);
+  });
+
+  it('sendMessage writes IPC file and returns true on success', async () => {
+    const fs = await import('fs');
+    let resolveProcess: () => void;
+    const processMessages = vi.fn(async () => {
+      await new Promise<void>((resolve) => {
+        resolveProcess = resolve;
+      });
+      return true;
+    });
+    queue.setProcessMessagesFn(processMessages);
+    queue.enqueueMessageCheck('group1@g.us');
+    await vi.advanceTimersByTimeAsync(10);
+    queue.registerProcess(
+      'group1@g.us',
+      {} as any,
+      'container-1',
+      'test-group',
+    );
+
+    const writeFileSync = vi.mocked(fs.default.writeFileSync);
+    const renameSync = vi.mocked(fs.default.renameSync);
+    writeFileSync.mockClear();
+    renameSync.mockClear();
+
+    const result = queue.sendMessage('group1@g.us', 'hello world');
+    expect(result).toBe(true);
+
+    expect(writeFileSync).toHaveBeenCalledWith(
+      expect.stringContaining('.json.tmp'),
+      JSON.stringify({ type: 'message', text: 'hello world' }),
+    );
+    expect(renameSync).toHaveBeenCalledTimes(1);
+
+    resolveProcess!();
+    await vi.advanceTimersByTimeAsync(10);
+  });
+
+  // --- drainWaiting with no pending items ---
+
+  it('drainWaiting skips waiting group with no pending work', async () => {
+    const processed: string[] = [];
+    const completionCallbacks: Array<() => void> = [];
+    const processMessages = vi.fn(async (groupJid: string) => {
+      processed.push(groupJid);
+      await new Promise<void>((resolve) => completionCallbacks.push(resolve));
+      return true;
+    });
+    queue.setProcessMessagesFn(processMessages);
+
+    // Fill both slots
+    queue.enqueueMessageCheck('group1@g.us');
+    queue.enqueueMessageCheck('group2@g.us');
+    await vi.advanceTimersByTimeAsync(10);
+    expect(processed).toEqual(['group1@g.us', 'group2@g.us']);
+
+    // Add group3 and group4 to waiting
+    queue.enqueueMessageCheck('group3@g.us');
+    queue.enqueueMessageCheck('group4@g.us');
+
+    // Clear group3's pending flags to exercise the skip path
+    const groups = (queue as any).groups as Map<string, any>;
+    groups.get('group3@g.us')!.pendingMessages = false;
+
+    // Free a slot — drainWaiting should skip group3, process group4
+    completionCallbacks[0]();
+    await vi.advanceTimersByTimeAsync(10);
+
+    expect(processed).toContain('group4@g.us');
+    expect(processed.filter((g) => g === 'group3@g.us')).toHaveLength(0);
+  });
+
+  // --- shutdown ---
+
+  it('shutdown logs active container names', async () => {
+    const { logger } = await import('./logger.js');
+    let resolveTask: () => void;
+
+    queue.enqueueTask(
+      'group1@g.us',
+      'task-1',
+      vi.fn(async () => {
+        await new Promise<void>((resolve) => {
+          resolveTask = resolve;
+        });
+      }),
+    );
+    await vi.advanceTimersByTimeAsync(10);
+
+    queue.registerProcess(
+      'group1@g.us',
+      { killed: false } as any,
+      'nano-group1-abc',
+      'group1-folder',
+    );
+
+    vi.mocked(logger.info).mockClear();
+    await queue.shutdown(5000);
+
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detachedContainers: ['nano-group1-abc'],
+      }),
+      expect.any(String),
+    );
+
+    resolveTask!();
+    await vi.advanceTimersByTimeAsync(10);
+  });
+
+  it('shutdown with no active containers logs empty detachedContainers', async () => {
+    const { logger } = await import('./logger.js');
+    vi.mocked(logger.info).mockClear();
+
+    await queue.shutdown(5000);
+
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activeCount: 0,
+        detachedContainers: [],
+      }),
+      expect.any(String),
+    );
+  });
+
+  // --- enqueueTask during shutdown ---
+
+  it('prevents new task enqueues after shutdown', async () => {
+    const taskFn = vi.fn(async () => {});
+    await queue.shutdown(1000);
+
+    queue.enqueueTask('group1@g.us', 'task-1', taskFn);
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(taskFn).not.toHaveBeenCalled();
+  });
+
+  // --- notifyIdle without pending tasks ---
+
+  it('notifyIdle without pending tasks sets idle without closing stdin', async () => {
+    const fs = await import('fs');
+    let resolveProcess: () => void;
+    const processMessages = vi.fn(async () => {
+      await new Promise<void>((resolve) => {
+        resolveProcess = resolve;
+      });
+      return true;
+    });
+    queue.setProcessMessagesFn(processMessages);
+    queue.enqueueMessageCheck('group1@g.us');
+    await vi.advanceTimersByTimeAsync(10);
+    queue.registerProcess(
+      'group1@g.us',
+      {} as any,
+      'container-1',
+      'test-group',
+    );
+
+    const writeFileSync = vi.mocked(fs.default.writeFileSync);
+    writeFileSync.mockClear();
+
+    queue.notifyIdle('group1@g.us');
+
+    const closeWrites = writeFileSync.mock.calls.filter(
+      (call) => typeof call[0] === 'string' && call[0].endsWith('_close'),
+    );
+    expect(closeWrites).toHaveLength(0);
+
+    resolveProcess!();
+    await vi.advanceTimersByTimeAsync(10);
+  });
+
+  // --- processMessagesFn exception triggers retry ---
+
+  it('schedules retry when processMessagesFn throws an exception', async () => {
+    let callCount = 0;
+    const processMessages = vi.fn(async () => {
+      callCount++;
+      if (callCount === 1) throw new Error('connection reset');
+      return true;
+    });
+    queue.setProcessMessagesFn(processMessages);
+
+    queue.enqueueMessageCheck('group1@g.us');
+    await vi.advanceTimersByTimeAsync(10);
+    expect(callCount).toBe(1);
+
+    // First retry after 5000ms (BASE_RETRY_MS * 2^0)
+    await vi.advanceTimersByTimeAsync(5010);
+    expect(callCount).toBe(2);
   });
 });

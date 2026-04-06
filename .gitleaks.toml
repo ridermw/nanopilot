@@ -1,0 +1,7 @@
+title = "NanoPilot Gitleaks Config"
+
+[allowlist]
+  description = "Allowlisted patterns"
+  paths = [
+    '''(^|/)test-fixtures/''',
+  ]

@@ -2,6 +2,10 @@
 
 Original requirements and design decisions from the project creator.
 
+> **Current doctrine:** For NanoPilot's canonical mission, scope, anti-goals,
+> and decision tests, read [../CONSTITUTION.md](../CONSTITUTION.md) first. This
+> file is background rationale and architecture context.
+
 ---
 
 ## Why This Exists
