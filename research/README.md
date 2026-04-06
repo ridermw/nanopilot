@@ -6,11 +6,10 @@ This is a **static content branch** — it is not forward-merged with main like 
 
 ## Browse
 
-View the full research catalog (INDEX.md and 16 topic files) by switching to the branch:
+View the full research catalog (INDEX.md and 16 topic files) on the branch:
 
 ```bash
-git fetch origin docs/research
-git checkout origin/docs/research -- research/
+git switch docs/research
 ```
 
 Or browse online: https://github.com/ridermw/nanopilot/tree/docs/research/research
