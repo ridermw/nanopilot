@@ -205,6 +205,13 @@ async function runQuery(
     }
   });
 
+  // Log tool usage for observability and E2E test assertions.
+  const unsubscribeTools = session.on('tool.execution_start', (event) => {
+    if (event.data?.toolName) {
+      log(`Tool: ${event.data.toolName}`);
+    }
+  });
+
   try {
     // sendAndWait blocks until the session is idle (turn complete).
     // Timeout is generous — agent may run complex multi-step tasks.
@@ -234,6 +241,7 @@ async function runQuery(
   } finally {
     ipcPolling = false;
     unsubscribe();
+    unsubscribeTools();
   }
 
   return { result: resultText, closedDuringQuery, bufferedMessages };
