@@ -792,17 +792,7 @@ describe('index.ts orchestrator', () => {
         },
       ] as any);
 
-      // Capture the queue instance to check closeStdin
-      const queueModule = await import('./group-queue.js');
-      const _MockQueue = queueModule.GroupQueue as unknown as new () => {
-        closeStdin: ReturnType<typeof vi.fn>;
-        enqueueMessageCheck: ReturnType<typeof vi.fn>;
-        registerProcess: ReturnType<typeof vi.fn>;
-        notifyIdle: ReturnType<typeof vi.fn>;
-        setProcessMessagesFn: ReturnType<typeof vi.fn>;
-        shutdown: ReturnType<typeof vi.fn>;
-      };
-
+      // Simulate successful agent output and advance time past the idle timeout.
       vi.mocked(runContainerAgent).mockImplementation(
         async (_group, _input, _onProcess, onOutput) => {
           if (onOutput) {

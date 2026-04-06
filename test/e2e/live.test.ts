@@ -4,7 +4,7 @@
  *
  * Run manually: COPILOT_GITHUB_TOKEN=$(gh auth token) npx vitest run --config vitest.e2e.config.ts test/e2e/live.test.ts
  */
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execSync, spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -29,6 +29,12 @@ describeIf('E2E Live: Real Copilot agent session', () => {
 
     // Create temp directory for test artifacts
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nanopilot-e2e-'));
+  });
+
+  afterAll(() => {
+    if (tempDir) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 
   it('agent responds to a simple prompt', async () => {

@@ -4,7 +4,7 @@
  */
 import { vi } from 'vitest';
 import type { Channel, NewMessage } from '../../src/types.js';
-import { _initTestDatabase, storeMessage, storeChatMetadata } from '../../src/db.js';
+import { _initTestDatabase, storeMessage } from '../../src/db.js';
 
 /** Create a mock channel that records sent messages */
 export function createMockChannel(
