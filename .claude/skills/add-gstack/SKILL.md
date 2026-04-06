@@ -22,12 +22,12 @@ for NanoPilot is the reviewed `upstream/skill/gstack` adaptation branch.
 
 - Reviewed source pin for the OpenClaw-native gstack skills
 - Explicit OpenClaw -> NanoPilot mapping matrix
+- NanoPilot-adapted `/office-hours` and `/plan-ceo-review` skills
 - Static validator for the mapping contract
 - Drift checker for upstream OpenClaw changes
 
-Future NanoPilot-adapted skills such as `/office-hours` and `/plan-ceo-review`
-should arrive on `skill/gstack` only after the mapping layer is reviewed and
-validated.
+`/investigate` and `/retro` remain deferred until the first adapted planning
+skills and the drift process have proven out.
 
 ## Phase 1: Pre-flight
 

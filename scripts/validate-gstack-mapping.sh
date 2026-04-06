@@ -6,10 +6,11 @@ SOURCE_LOCK="$ROOT_DIR/.claude/skills/add-gstack/source-lock.json"
 MAPPING_FILE="$ROOT_DIR/.claude/skills/add-gstack/mapping.json"
 SKILL_FILE="$ROOT_DIR/.claude/skills/add-gstack/SKILL.md"
 
-node - "$SOURCE_LOCK" "$MAPPING_FILE" "$SKILL_FILE" <<'NODE'
+node - "$SOURCE_LOCK" "$MAPPING_FILE" "$SKILL_FILE" "$ROOT_DIR" <<'NODE'
 const fs = require('node:fs');
+const path = require('node:path');
 
-const [sourceLockPath, mappingPath, skillPath] = process.argv.slice(2);
+const [sourceLockPath, mappingPath, skillPath, rootDir] = process.argv.slice(2);
 const errors = [];
 
 function readJson(path) {
@@ -152,6 +153,25 @@ if (mapping && sourceLock) {
           errors.push(
             `${entry.upstreamSkill} must declare requiredSubstitutions for an adaptation status`,
           );
+        }
+
+        if (entry.status === 'adapted') {
+          const targetPath = path.join(rootDir, target.path);
+          if (!fs.existsSync(targetPath)) {
+            errors.push(`Adapted target file is missing for ${entry.upstreamSkill}: ${target.path}`);
+          } else {
+            const targetText = fs.readFileSync(targetPath, 'utf8');
+            if (!targetText.includes(entry.upstreamPath)) {
+              errors.push(
+                `Adapted target ${target.path} must mention canonical source path ${entry.upstreamPath}`,
+              );
+            }
+            if (!targetText.includes(mapping.canonicalReviewedRef)) {
+              errors.push(
+                `Adapted target ${target.path} must mention reviewed ref ${mapping.canonicalReviewedRef}`,
+              );
+            }
+          }
         }
       }
     }

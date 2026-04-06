@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - '.claude/skills/add-gstack/**'
+      - '.claude/skills/office-hours/**'
+      - '.claude/skills/plan-ceo-review/**'
       - 'scripts/validate-gstack-mapping.sh'
       - 'scripts/check-gstack-drift.sh'
       - '.github/workflows/gstack-source-drift.yml'

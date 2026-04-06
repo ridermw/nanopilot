@@ -5,8 +5,8 @@
     {
       "upstreamSkill": "gstack-openclaw-office-hours",
       "upstreamPath": "openclaw/skills/gstack-openclaw-office-hours/SKILL.md",
-      "status": "planned-adaptation",
-      "rationale": "Office-hours is the clearest first NanoPilot adaptation because it is methodology-heavy, low-risk, and does not require OpenClaw runtime mechanics.",
+      "status": "adapted",
+      "rationale": "Office-hours is the clearest first NanoPilot adaptation because it is methodology-heavy, low-risk, and does not require OpenClaw runtime mechanics. The first NanoPilot adaptation now exists as a repo-local planning skill.",
       "nanopilotTarget": {
         "name": "office-hours",
         "path": ".claude/skills/office-hours/SKILL.md",
@@ -33,8 +33,8 @@
     {
       "upstreamSkill": "gstack-openclaw-ceo-review",
       "upstreamPath": "openclaw/skills/gstack-openclaw-ceo-review/SKILL.md",
-      "status": "planned-adaptation",
-      "rationale": "CEO review is a strong second adaptation because it maps well to NanoPilot planning review, but it must be translated to NanoPilot plan-mode and approval semantics.",
+      "status": "adapted",
+      "rationale": "CEO review is a strong second adaptation because it maps well to NanoPilot planning review. The first NanoPilot adaptation now exists as a repo-local review skill with explicit approval gates and NanoPilot plan artifact handling.",
       "nanopilotTarget": {
         "name": "plan-ceo-review",
         "path": ".claude/skills/plan-ceo-review/SKILL.md",
