@@ -40,7 +40,7 @@ git status --porcelain
 If the working tree is not clean, stop and ask the user to commit or stash
 their changes first.
 
-### Ensure the `upstream` remote exists
+### Ensure the `upstream` remote exists and points at NanoPilot
 
 ```bash
 git remote -v
@@ -50,6 +50,20 @@ If `upstream` is missing, add it:
 
 ```bash
 git remote add upstream https://github.com/ridermw/nanopilot.git
+```
+
+If `upstream` already exists, confirm it points at the expected NanoPilot
+repository:
+
+```bash
+git remote get-url upstream
+```
+
+If that URL is not `https://github.com/ridermw/nanopilot.git`, fix it before
+continuing:
+
+```bash
+git remote set-url upstream https://github.com/ridermw/nanopilot.git
 ```
 
 ### Check whether `skill/gstack` is already applied
@@ -125,10 +139,7 @@ validators, and only then bump the reviewed source lock.
 ## Phase 6: User updates later
 
 Once a user has merged `skill/gstack`, they should pick up reviewed future
-changes the normal NanoPilot way:
-
-```bash
-/update-skills
-```
+changes the normal NanoPilot way by running the NanoPilot `/update-skills`
+command from NanoPilot or Claude Code, not from a shell.
 
 That updates the NanoPilot adaptation branch, not raw upstream gstack.

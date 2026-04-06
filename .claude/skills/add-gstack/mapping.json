@@ -34,7 +34,7 @@
       "upstreamSkill": "gstack-openclaw-ceo-review",
       "upstreamPath": "openclaw/skills/gstack-openclaw-ceo-review/SKILL.md",
       "status": "adapted",
-      "rationale": "CEO review is a strong second adaptation because it maps well to NanoPilot planning review. The first NanoPilot adaptation now exists as a repo-local review skill with explicit approval gates and NanoPilot plan artifact handling.",
+      "rationale": "CEO review is a strong second adaptation because it maps well to NanoPilot planning review. The NanoPilot CEO-review adaptation now exists as a repo-local review skill with explicit approval gates and NanoPilot plan artifact handling.",
       "nanopilotTarget": {
         "name": "plan-ceo-review",
         "path": ".claude/skills/plan-ceo-review/SKILL.md",
