@@ -107,7 +107,11 @@ import {
   deleteSession,
   setSession,
 } from './db.js';
-import { runContainerAgent, writeGroupsSnapshot, writeTasksSnapshot } from './container-runner.js';
+import {
+  runContainerAgent,
+  writeGroupsSnapshot,
+  writeTasksSnapshot,
+} from './container-runner.js';
 import { resolveGroupFolderPath } from './group-folder.js';
 import { findChannel } from './router.js';
 import { getTriggerPattern } from './config.js';
@@ -280,7 +284,9 @@ describe('index.ts orchestrator', () => {
 
     it('does not overwrite existing CLAUDE.md', () => {
       mockedFs.existsSync.mockReturnValue(true); // both group dir and CLAUDE.md exist
-      vi.mocked(resolveGroupFolderPath).mockReturnValue('/mock/groups/existing');
+      vi.mocked(resolveGroupFolderPath).mockReturnValue(
+        '/mock/groups/existing',
+      );
 
       _registerGroup('chat-2', {
         name: 'Existing Group',
@@ -319,8 +325,12 @@ describe('index.ts orchestrator', () => {
         if (ps.endsWith('/mock/groups/main/CLAUDE.md')) return true;
         return false;
       });
-      mockedFs.readFileSync.mockReturnValue('# Andy\nYou are Andy, the main assistant.');
-      vi.mocked(resolveGroupFolderPath).mockReturnValue('/mock/groups/main_grp');
+      mockedFs.readFileSync.mockReturnValue(
+        '# Andy\nYou are Andy, the main assistant.',
+      );
+      vi.mocked(resolveGroupFolderPath).mockReturnValue(
+        '/mock/groups/main_grp',
+      );
 
       _registerGroup('chat-main', {
         name: 'Main Group',
@@ -350,9 +360,24 @@ describe('index.ts orchestrator', () => {
 
     it('excludes __group_sync__ and non-group chats', () => {
       vi.mocked(getAllChats).mockReturnValue([
-        { jid: '__group_sync__', name: 'Sync', last_message_time: '', is_group: true },
-        { jid: 'chat-1', name: 'DM', last_message_time: '2024-01-01', is_group: false },
-        { jid: 'grp-1', name: 'Real Group', last_message_time: '2024-01-02', is_group: true },
+        {
+          jid: '__group_sync__',
+          name: 'Sync',
+          last_message_time: '',
+          is_group: true,
+        },
+        {
+          jid: 'chat-1',
+          name: 'DM',
+          last_message_time: '2024-01-01',
+          is_group: false,
+        },
+        {
+          jid: 'grp-1',
+          name: 'Real Group',
+          last_message_time: '2024-01-02',
+          is_group: true,
+        },
       ] as any);
 
       const result = getAvailableGroups();
@@ -372,8 +397,18 @@ describe('index.ts orchestrator', () => {
         },
       });
       vi.mocked(getAllChats).mockReturnValue([
-        { jid: 'grp-1', name: 'Registered', last_message_time: '2024-01-01', is_group: true },
-        { jid: 'grp-2', name: 'Unregistered', last_message_time: '2024-01-02', is_group: true },
+        {
+          jid: 'grp-1',
+          name: 'Registered',
+          last_message_time: '2024-01-01',
+          is_group: true,
+        },
+        {
+          jid: 'grp-2',
+          name: 'Unregistered',
+          last_message_time: '2024-01-02',
+          is_group: true,
+        },
       ] as any);
 
       const result = getAvailableGroups();
@@ -556,14 +591,21 @@ describe('index.ts orchestrator', () => {
               newSessionId: 'sess-1',
             });
           }
-          return { status: 'success', result: 'Hello there!', newSessionId: 'sess-1' };
+          return {
+            status: 'success',
+            result: 'Hello there!',
+            newSessionId: 'sess-1',
+          };
         },
       );
 
       await _processGroupMessages('chat-1');
 
       // Internal block stripped, only 'Hello there!' sent
-      expect(mockChannel.sendMessage).toHaveBeenCalledWith('chat-1', 'Hello there!');
+      expect(mockChannel.sendMessage).toHaveBeenCalledWith(
+        'chat-1',
+        'Hello there!',
+      );
     });
 
     it('does not send empty text after stripping internal blocks', async () => {
@@ -654,7 +696,11 @@ describe('index.ts orchestrator', () => {
             // First: send output successfully
             await onOutput({ status: 'success', result: 'Partial response' });
             // Then: report error
-            await onOutput({ status: 'error', result: '', error: 'something broke' });
+            await onOutput({
+              status: 'error',
+              result: '',
+              error: 'something broke',
+            });
           }
           return { status: 'error', result: '', error: 'something broke' };
         },
@@ -945,7 +991,9 @@ describe('index.ts orchestrator', () => {
 
     it('does not clear session on non-stale error', async () => {
       _setRegisteredGroups({ 'chat-1': testGroup });
-      vi.mocked(getAllSessions).mockReturnValue({ test_group: 'existing-session' });
+      vi.mocked(getAllSessions).mockReturnValue({
+        test_group: 'existing-session',
+      });
       vi.mocked(getRouterState).mockReturnValue('');
       vi.mocked(getAllRegisteredGroups).mockReturnValue({});
       _loadState();
@@ -1066,9 +1114,11 @@ describe('index.ts orchestrator', () => {
         expect.stringContaining('Recovery'),
       );
       // G2 should NOT have been logged for recovery
-      const recoveryCalls = vi.mocked(logger.info).mock.calls.filter(
-        (call) => typeof call[1] === 'string' && call[1].includes('Recovery'),
-      );
+      const recoveryCalls = vi
+        .mocked(logger.info)
+        .mock.calls.filter(
+          (call) => typeof call[1] === 'string' && call[1].includes('Recovery'),
+        );
       expect(recoveryCalls).toHaveLength(1);
     });
   });

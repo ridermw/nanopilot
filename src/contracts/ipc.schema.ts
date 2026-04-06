@@ -63,8 +63,16 @@ const RegisterGroupSchema = z.object({
   requiresTrigger: z.boolean().optional(),
   containerConfig: z
     .object({
-      additionalMounts: z.array(z.string()).optional(),
-      environment: z.record(z.string(), z.string()).optional(),
+      additionalMounts: z
+        .array(
+          z.object({
+            hostPath: z.string(),
+            containerPath: z.string().optional(),
+            readonly: z.boolean().optional(),
+          }),
+        )
+        .optional(),
+      timeout: z.number().optional(),
     })
     .optional(),
 });

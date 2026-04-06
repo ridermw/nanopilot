@@ -567,9 +567,7 @@ describe('buildVolumeMounts (via spawn args)', () => {
     mockExistsSync([]);
     await runAndClose(testGroup, { isMain: true });
     const mounts = getVolumeMounts();
-    expect(mounts).toContainEqual(
-      `${process.cwd()}:/workspace/project:ro`,
-    );
+    expect(mounts).toContainEqual(`${process.cwd()}:/workspace/project:ro`);
   });
 
   it('main group mounts store writable', async () => {
@@ -617,9 +615,7 @@ describe('buildVolumeMounts (via spawn args)', () => {
     mockExistsSync([]);
     await runAndClose(testGroup, { isMain: false });
     const mounts = getVolumeMounts();
-    expect(
-      mounts.find((m) => m.includes('/workspace/global')),
-    ).toBeUndefined();
+    expect(mounts.find((m) => m.includes('/workspace/global'))).toBeUndefined();
   });
 
   it('copies skill directories from container/skills/', async () => {
@@ -662,7 +658,9 @@ describe('buildVolumeMounts (via spawn args)', () => {
   it('creates IPC directories for messages, tasks, and input', async () => {
     mockExistsSync([]);
     await runAndClose(testGroup);
-    const mkdirPaths = (mockFs.mkdirSync as ReturnType<typeof vi.fn>).mock.calls.map((c: unknown[]) => String(c[0]));
+    const mkdirPaths = (
+      mockFs.mkdirSync as ReturnType<typeof vi.fn>
+    ).mock.calls.map((c: unknown[]) => String(c[0]));
     const ipcBase = '/tmp/nanopilot-test-groups/test-group/ipc';
     expect(mkdirPaths).toContain(`${ipcBase}/messages`);
     expect(mkdirPaths).toContain(`${ipcBase}/tasks`);

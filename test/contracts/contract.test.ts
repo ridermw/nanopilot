@@ -231,8 +231,10 @@ describe('IpcTask contract — discriminated union', () => {
       trigger: '@Andy',
       requiresTrigger: true,
       containerConfig: {
-        additionalMounts: ['/data:/data:ro'],
-        environment: { MY_VAR: 'value' },
+        additionalMounts: [
+          { hostPath: '/data', containerPath: 'data', readonly: true },
+        ],
+        timeout: 600000,
       },
     };
     expect(IpcTaskSchema.parse(task)).toMatchObject(task);

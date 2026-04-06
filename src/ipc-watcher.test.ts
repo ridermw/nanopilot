@@ -31,11 +31,7 @@ vi.mock('./group-folder.js', () => ({
 }));
 
 import fs from 'fs';
-import {
-  startIpcWatcher,
-  _resetIpcWatcherForTests,
-  IpcDeps,
-} from './ipc.js';
+import { startIpcWatcher, _resetIpcWatcherForTests, IpcDeps } from './ipc.js';
 import { logger } from './logger.js';
 import { RegisteredGroup } from './types.js';
 
@@ -89,25 +85,37 @@ function stubFs(opts: {
   contents?: Record<string, string>;
   existingDirs?: Set<string>;
 }) {
-  const { dirs = [], files = {}, contents = {}, existingDirs = new Set() } = opts;
+  const {
+    dirs = [],
+    files = {},
+    contents = {},
+    existingDirs = new Set(),
+  } = opts;
 
   mockedFs.mkdirSync.mockReturnValue(undefined as any);
 
   mockedFs.readdirSync.mockImplementation(((p: string) => {
     if (p === IPC_BASE) return dirs as any;
     if (files[p]) return files[p] as any;
-    throw Object.assign(new Error(`ENOENT: no such file or directory, scandir '${p}'`), { code: 'ENOENT' });
+    throw Object.assign(
+      new Error(`ENOENT: no such file or directory, scandir '${p}'`),
+      { code: 'ENOENT' },
+    );
   }) as any);
 
   mockedFs.statSync.mockImplementation(((p: string) => ({
     isDirectory: () => true,
   })) as any);
 
-  mockedFs.existsSync.mockImplementation(((p: string) => existingDirs.has(p)) as any);
+  mockedFs.existsSync.mockImplementation(((p: string) =>
+    existingDirs.has(p)) as any);
 
   mockedFs.readFileSync.mockImplementation(((p: string) => {
     if (contents[p] !== undefined) return contents[p];
-    throw Object.assign(new Error(`ENOENT: no such file or directory, open '${p}'`), { code: 'ENOENT' });
+    throw Object.assign(
+      new Error(`ENOENT: no such file or directory, open '${p}'`),
+      { code: 'ENOENT' },
+    );
   }) as any);
 
   mockedFs.unlinkSync.mockReturnValue(undefined);
@@ -154,7 +162,9 @@ describe('startIpcWatcher', () => {
     startIpcWatcher(deps);
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(mockedFs.mkdirSync).toHaveBeenCalledWith(IPC_BASE, { recursive: true });
+    expect(mockedFs.mkdirSync).toHaveBeenCalledWith(IPC_BASE, {
+      recursive: true,
+    });
   });
 
   // 3. Base dir read error
@@ -207,19 +217,23 @@ describe('startIpcWatcher', () => {
       dirs: ['whatsapp_main'],
       files: { [`${IPC_BASE}/whatsapp_main/messages`]: ['msg1.json'] },
       contents: { [msgPath]: msgContent },
-      existingDirs: new Set([
-        `${IPC_BASE}/whatsapp_main/messages`,
-      ]),
+      existingDirs: new Set([`${IPC_BASE}/whatsapp_main/messages`]),
     });
 
     const deps = makeDeps();
     startIpcWatcher(deps);
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(deps.sendMessage).toHaveBeenCalledWith('other@g.us', 'hello from main');
+    expect(deps.sendMessage).toHaveBeenCalledWith(
+      'other@g.us',
+      'hello from main',
+    );
     expect(mockedFs.unlinkSync).toHaveBeenCalledWith(msgPath);
     expect(logger.info).toHaveBeenCalledWith(
-      expect.objectContaining({ chatJid: 'other@g.us', sourceGroup: 'whatsapp_main' }),
+      expect.objectContaining({
+        chatJid: 'other@g.us',
+        sourceGroup: 'whatsapp_main',
+      }),
       'IPC message sent',
     );
   });
@@ -270,7 +284,10 @@ describe('startIpcWatcher', () => {
 
     expect(deps.sendMessage).not.toHaveBeenCalled();
     expect(logger.warn).toHaveBeenCalledWith(
-      expect.objectContaining({ chatJid: 'main@g.us', sourceGroup: 'other-group' }),
+      expect.objectContaining({
+        chatJid: 'main@g.us',
+        sourceGroup: 'other-group',
+      }),
       'Unauthorized IPC message attempt blocked',
     );
     // File is still unlinked even for unauthorized messages
@@ -313,10 +330,15 @@ describe('startIpcWatcher', () => {
     await vi.advanceTimersByTimeAsync(0);
 
     expect(logger.error).toHaveBeenCalledWith(
-      expect.objectContaining({ file: 'corrupt.json', sourceGroup: 'whatsapp_main' }),
+      expect.objectContaining({
+        file: 'corrupt.json',
+        sourceGroup: 'whatsapp_main',
+      }),
       'Error processing IPC message',
     );
-    expect(mockedFs.mkdirSync).toHaveBeenCalledWith(`${IPC_BASE}/errors`, { recursive: true });
+    expect(mockedFs.mkdirSync).toHaveBeenCalledWith(`${IPC_BASE}/errors`, {
+      recursive: true,
+    });
     expect(mockedFs.renameSync).toHaveBeenCalledWith(
       msgPath,
       `${IPC_BASE}/errors/whatsapp_main-corrupt.json`,
@@ -367,10 +389,15 @@ describe('startIpcWatcher', () => {
     await vi.advanceTimersByTimeAsync(0);
 
     expect(logger.error).toHaveBeenCalledWith(
-      expect.objectContaining({ file: 'bad-task.json', sourceGroup: 'whatsapp_main' }),
+      expect.objectContaining({
+        file: 'bad-task.json',
+        sourceGroup: 'whatsapp_main',
+      }),
       'Error processing IPC task',
     );
-    expect(mockedFs.mkdirSync).toHaveBeenCalledWith(`${IPC_BASE}/errors`, { recursive: true });
+    expect(mockedFs.mkdirSync).toHaveBeenCalledWith(`${IPC_BASE}/errors`, {
+      recursive: true,
+    });
     expect(mockedFs.renameSync).toHaveBeenCalledWith(
       taskPath,
       `${IPC_BASE}/errors/whatsapp_main-bad-task.json`,
@@ -431,7 +458,10 @@ describe('startIpcWatcher', () => {
     await vi.advanceTimersByTimeAsync(0);
 
     // Message still sent
-    expect(deps.sendMessage).toHaveBeenCalledWith('other@g.us', 'just a message');
+    expect(deps.sendMessage).toHaveBeenCalledWith(
+      'other@g.us',
+      'just a message',
+    );
     // No error about tasks directory
     expect(logger.error).not.toHaveBeenCalledWith(
       expect.anything(),
@@ -467,8 +497,9 @@ describe('startIpcWatcher', () => {
     })) as any);
 
     // existsSync: messages dir exists (but read will fail), tasks dir exists
-    mockedFs.existsSync.mockImplementation(((p: string) =>
-      p === messagesDir || p === tasksDir) as any);
+    mockedFs.existsSync.mockImplementation(
+      ((p: string) => p === messagesDir || p === tasksDir) as any,
+    );
 
     mockedFs.readFileSync.mockImplementation(((p: string) => {
       if (p === taskPath) return taskContent;
@@ -515,8 +546,9 @@ describe('startIpcWatcher', () => {
       isDirectory: () => true,
     })) as any);
 
-    mockedFs.existsSync.mockImplementation(((p: string) =>
-      p === messagesDir || p === tasksDir) as any);
+    mockedFs.existsSync.mockImplementation(
+      ((p: string) => p === messagesDir || p === tasksDir) as any,
+    );
 
     mockedFs.readFileSync.mockImplementation(((p: string) => {
       if (p === msgPath) return msgContent;
@@ -531,7 +563,10 @@ describe('startIpcWatcher', () => {
     await vi.advanceTimersByTimeAsync(0);
 
     // Message still sent despite upcoming task error
-    expect(deps.sendMessage).toHaveBeenCalledWith('other@g.us', 'before task error');
+    expect(deps.sendMessage).toHaveBeenCalledWith(
+      'other@g.us',
+      'before task error',
+    );
     expect(logger.error).toHaveBeenCalledWith(
       expect.objectContaining({ sourceGroup: 'whatsapp_main' }),
       'Error reading IPC tasks directory',

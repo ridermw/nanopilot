@@ -248,12 +248,7 @@ describe('update_task', () => {
 
 describe('pause_task', () => {
   it('does nothing when taskId is missing', async () => {
-    await processTaskIpc(
-      { type: 'pause_task' },
-      'whatsapp_main',
-      true,
-      deps,
-    );
+    await processTaskIpc({ type: 'pause_task' }, 'whatsapp_main', true, deps);
     expect(deps.onTasksChanged).not.toHaveBeenCalled();
   });
 
@@ -302,12 +297,7 @@ describe('pause_task', () => {
 
 describe('resume_task', () => {
   it('does nothing when taskId is missing', async () => {
-    await processTaskIpc(
-      { type: 'resume_task' },
-      'whatsapp_main',
-      true,
-      deps,
-    );
+    await processTaskIpc({ type: 'resume_task' }, 'whatsapp_main', true, deps);
     expect(deps.onTasksChanged).not.toHaveBeenCalled();
   });
 

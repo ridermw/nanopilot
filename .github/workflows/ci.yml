@@ -51,5 +51,5 @@ jobs:
         run: npx vitest run --config vitest.e2e.config.ts test/e2e/mocked.test.ts
 
       - name: Coverage report on PR
-        uses: davelosert/vitest-coverage-report-action@v2
+        uses: davelosert/vitest-coverage-report-action@3c50566c523e04813df28de8f7c48dd97d663f1c # v2
         if: always() && github.event_name == 'pull_request'
