@@ -58,6 +58,10 @@ Four types of skills exist in NanoPilot. See [CONTRIBUTING.md](CONTRIBUTING.md) 
 
 Before creating a PR, adding a skill, or preparing any contribution, you MUST read [CONTRIBUTING.md](CONTRIBUTING.md). It covers accepted change types, the four skill types and their guidelines, SKILL.md format rules, PR requirements, and the pre-submission checklist (searching for existing PRs/issues, testing, description format).
 
+## After Creating a PR
+
+Monitor the PR for failed checks or inline review comments. If anything shows up, assess the feedback and decide whether to fix. If so, make the fix, push the change, acknowledge the comment, and resolve it.
+
 ## Development
 
 Run commands directly—don't tell the user to run them.

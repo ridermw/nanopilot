@@ -1,7 +1,7 @@
 /**
  * Stdio MCP Server for NanoPilot
- * Runs as a standalone stdio process. Sub-agents spawned via Task or
- * TeamCreate inherit the parent's stdio transport, so this server is
+ * Runs as a standalone stdio process. Sub-agents spawned via `Task` or
+ * `TeamCreate` inherit the parent's stdio transport, so this server is
  * available to all agents in a team without additional setup.
  * Reads context from environment variables, writes IPC files for the host.
  */

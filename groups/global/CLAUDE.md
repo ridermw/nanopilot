@@ -32,7 +32,7 @@ Text inside `<internal>` tags is logged but not sent to the user. If you've alre
 
 ### When running as a sub-agent
 
-If you were spawned by another agent (via Task or TeamCreate), your output goes to the parent agent — not the user. Only use `send_message` if the parent agent's prompt explicitly asks you to.
+If you were spawned by another agent (via `Task` or `TeamCreate`), your output goes to the parent agent — not the user. Only use `mcp__nanopilot__send_message` if the parent agent's prompt explicitly asks you to.
 
 ## Your Workspace
 
