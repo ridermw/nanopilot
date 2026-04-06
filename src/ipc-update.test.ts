@@ -9,7 +9,6 @@ import {
   _initTestDatabase,
   createTask,
   getTaskById,
-  getAllTasks,
   setRegisteredGroup,
 } from './db.js';
 import { processTaskIpc, IpcDeps } from './ipc.js';

@@ -115,8 +115,6 @@ import {
 import { resolveGroupFolderPath } from './group-folder.js';
 import { findChannel } from './router.js';
 import { getTriggerPattern } from './config.js';
-import { isTriggerAllowed } from './sender-allowlist.js';
-import { GroupQueue } from './group-queue.js';
 import {
   _loadState,
   _getOrRecoverCursor,
@@ -796,7 +794,7 @@ describe('index.ts orchestrator', () => {
 
       // Capture the queue instance to check closeStdin
       const queueModule = await import('./group-queue.js');
-      const MockQueue = queueModule.GroupQueue as unknown as new () => {
+      const _MockQueue = queueModule.GroupQueue as unknown as new () => {
         closeStdin: ReturnType<typeof vi.fn>;
         enqueueMessageCheck: ReturnType<typeof vi.fn>;
         registerProcess: ReturnType<typeof vi.fn>;

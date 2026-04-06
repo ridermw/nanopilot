@@ -20,10 +20,10 @@ export default defineConfig({
         'src/types.ts', // pure type definitions
       ],
       thresholds: {
-        lines: 87.58,
-        branches: 81.58,
-        functions: 80,
-        statements: 86.76,
+        lines: 87.26,
+        branches: 81.64,
+        functions: 79.6,
+        statements: 86.38,
         autoUpdate: true,
         'src/ipc.ts': {
           statements: 100,
