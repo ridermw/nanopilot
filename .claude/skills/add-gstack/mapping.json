@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "canonicalReviewedRef": "422f172fbbcb75774c86bbe5d7c097adaf561380",
+  "mappings": [
+    {
+      "upstreamSkill": "gstack-openclaw-office-hours",
+      "upstreamPath": "openclaw/skills/gstack-openclaw-office-hours/SKILL.md",
+      "status": "adapted",
+      "rationale": "Office-hours is the clearest first NanoPilot adaptation because it is methodology-heavy, low-risk, and does not require OpenClaw runtime mechanics. The first NanoPilot adaptation now exists as a repo-local planning skill.",
+      "nanopilotTarget": {
+        "name": "office-hours",
+        "path": ".claude/skills/office-hours/SKILL.md",
+        "surface": "repo-local markdown skill"
+      },
+      "requiredSubstitutions": [
+        {
+          "from": "OpenClaw free-form one-question gating",
+          "to": "NanoPilot ask_user-driven one-question gating where structured input is needed",
+          "reason": "NanoPilot has a first-class structured question tool and should use it instead of open-ended prompt-only flow."
+        },
+        {
+          "from": "Design docs saved to OpenClaw memory/",
+          "to": "NanoPilot session plan.md and session workspace artifacts",
+          "reason": "NanoPilot's planning source of truth is plan.md and the session workspace, not OpenClaw memory/."
+        },
+        {
+          "from": "YC / Garry Tan specific branding and closing copy",
+          "to": "NanoPilot-neutral planning language",
+          "reason": "NanoPilot should preserve the methodology without vendoring gstack-specific founder branding."
+        }
+      ]
+    },
+    {
+      "upstreamSkill": "gstack-openclaw-ceo-review",
+      "upstreamPath": "openclaw/skills/gstack-openclaw-ceo-review/SKILL.md",
+      "status": "adapted",
+      "rationale": "CEO review is a strong second adaptation because it maps well to NanoPilot planning review. The first NanoPilot adaptation now exists as a repo-local review skill with explicit approval gates and NanoPilot plan artifact handling.",
+      "nanopilotTarget": {
+        "name": "plan-ceo-review",
+        "path": ".claude/skills/plan-ceo-review/SKILL.md",
+        "surface": "repo-local markdown skill"
+      },
+      "requiredSubstitutions": [
+        {
+          "from": "OpenClaw scope-mode questions and interactive review loop",
+          "to": "NanoPilot plan-mode review with explicit ask_user and exit_plan_mode gates",
+          "reason": "NanoPilot has structured plan approval mechanics that should replace raw prompt instructions."
+        },
+        {
+          "from": "OpenClaw memory/ review summaries",
+          "to": "NanoPilot plan.md and SQL todo state",
+          "reason": "NanoPilot persists review state in plan.md and session SQL tables."
+        },
+        {
+          "from": "OpenClaw-specific UX and formatting assumptions",
+          "to": "NanoPilot CLI markdown, concise summaries, and branch-skill workflow",
+          "reason": "The output contract must match NanoPilot's CLI and git-driven skill model."
+        }
+      ]
+    },
+    {
+      "upstreamSkill": "gstack-openclaw-investigate",
+      "upstreamPath": "openclaw/skills/gstack-openclaw-investigate/SKILL.md",
+      "status": "deferred",
+      "rationale": "Investigate is valuable but should wait until the planning/mapping layer is stable; it also needs careful integration with NanoPilot's existing debugging and verification conventions."
+    },
+    {
+      "upstreamSkill": "gstack-openclaw-retro",
+      "upstreamPath": "openclaw/skills/gstack-openclaw-retro/SKILL.md",
+      "status": "deferred",
+      "rationale": "Retro depends on a stronger persistence/reporting story and should follow only after the first adapted planning skills and drift process are proven."
+    }
+  ]
+}
