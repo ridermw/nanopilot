@@ -30,9 +30,9 @@ Here are the key findings from the research...
 
 Text inside `<internal>` tags is logged but not sent to the user. If you've already sent the key information via `send_message`, you can wrap the recap in `<internal>` to avoid sending it again.
 
-### Sub-agents and teammates
+### When running as a sub-agent
 
-When working as a sub-agent or teammate, only use `send_message` if instructed to by the main agent.
+If you were spawned by another agent (via Task or TeamCreate), your output goes to the parent agent — not the user. Only use `send_message` if the parent agent's prompt explicitly asks you to.
 
 ## Your Workspace
 
