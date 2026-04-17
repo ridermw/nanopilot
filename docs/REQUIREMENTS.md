@@ -86,8 +86,8 @@ A personal AI assistant accessible via messaging, with minimal custom code.
 - Trigger: `@Andy` prefix (case insensitive), configurable via `ASSISTANT_NAME` env var
 - Unregistered groups are ignored completely
 - Messages reach the agent via one of two paths:
-  - **Cold start**: when no container is active for the group, the host spawns a fresh container with the batched prompt on stdin
-  - **Hot pipe**: when a container is already running, the host writes a JSON file into its per-group `/workspace/ipc/input/` directory and the in-container runner drains it between or mid-turn. A `_close` sentinel or idle timeout winds the container down.
+  - **Cold start**: when no container is active for the group, the host spawns a fresh container and sends a full `ContainerInput` JSON payload on stdin, with the batched prompt included as one field
+  - **Hot pipe**: when a container is already running, the host writes a JSON file to the per-group IPC input directory on the host (e.g. `${DATA_DIR}/ipc/<groupFolder>/input`), which is mounted into the container at `/workspace/ipc/input/`. The in-container runner may drain those files while a turn is in progress, but buffered messages are prepended to the next prompt rather than acted on mid-turn. A `_close` sentinel or idle timeout winds the container down.
 
 ### Memory System
 - **Per-group memory**: Each group has a folder with its own `CLAUDE.md`

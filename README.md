@@ -103,8 +103,8 @@ Single Node.js process. Channels self-register at startup. Messages queue per-gr
 
 Messages reach the agent via one of two paths:
 
-- **Cold start** — if no container is active for the group, the host spawns a fresh container with the batched prompt on stdin.
-- **Hot pipe** — if a container is already running for the group, the host writes a JSON file into its `/workspace/ipc/input/` directory and the in-container runner picks it up between or mid-turn. Containers stay alive until an idle timeout or a `_close` sentinel winds them down.
+- **Cold start** — if no container is active for the group, the host spawns a fresh container and delivers a full `ContainerInput` JSON payload on stdin, with the batched prompt included as one field.
+- **Hot pipe** — if a container is already running for the group, the host writes a JSON file to the per-group IPC input directory on the host (for example, `${DATA_DIR}/ipc/<groupFolder>/input`), which is mounted into the container at `/workspace/ipc/input/`. The in-container runner may drain those files while a turn is in progress, but buffered messages are prepended to the next prompt rather than acted on mid-turn. Containers stay alive until an idle timeout or a `_close` sentinel winds them down.
 
 ```
 Host                              Container
