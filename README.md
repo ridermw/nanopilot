@@ -101,6 +101,11 @@ Channels → SQLite → Polling Loop → Container (Copilot SDK) → Response
 
 Single Node.js process. Channels self-register at startup. Messages queue per-group. Agents run in isolated Linux containers via the Copilot SDK. IPC happens through the filesystem.
 
+Messages reach the agent via one of two paths:
+
+- **Cold start** — if no container is active for the group, the host spawns a fresh container with the batched prompt on stdin.
+- **Hot pipe** — if a container is already running for the group, the host writes a JSON file into its `/workspace/ipc/input/` directory and the in-container runner picks it up between or mid-turn. Containers stay alive until an idle timeout or a `_close` sentinel winds them down.
+
 ```
 Host                              Container
 ┌────────────────────┐            ┌──────────────────────────┐
