@@ -11,3 +11,4 @@ The files in this directory are the original design documents and developer refe
 | [DEBUG_CHECKLIST.md](DEBUG_CHECKLIST.md) | Troubleshooting |
 | [docker-sandboxes.md](docker-sandboxes.md) | Docker Sandboxes |
 | [APPLE-CONTAINER-NETWORKING.md](APPLE-CONTAINER-NETWORKING.md) | Container runtime |
+| [PARALLEL-SEARCH.md](PARALLEL-SEARCH.md) | Optional keyless web search and page extraction |
